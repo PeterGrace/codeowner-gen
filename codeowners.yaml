@@ -2,13 +2,16 @@
 entries:
   - path: "alpha"
     comment: "Alphabetically speaking, this probably is coming early on"
+    group: "phonetic"
     owners:
     - "@petergrace"
   - path: "zebra"
     comment: "This is likely the last entry"
+    group: "phonetic"
     owners:
     - "@petergrace"
   - path: "*"
+    group: "main"
     owners:
     - "@petergrace"
   - path: "target/debug/deps/itoa-*"

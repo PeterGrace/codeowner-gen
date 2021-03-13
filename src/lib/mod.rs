@@ -1,16 +1,13 @@
-use serde::de::{Error, Unexpected, Expected};
+use serde::de::{Error};
 use serde::{Deserialize, Deserializer};
 use regex::Regex;
 use lazy_static::lazy_static;
-use std::fmt;
 
 lazy_static! {
             static ref TEAM: Regex = Regex::new(r"^@\S+/\S+").unwrap();
             static ref USERNAME: Regex = Regex::new(r"^@\S+").unwrap();
             static ref EMAIL: Regex = Regex::new(r"^\S+@\S+").unwrap();
 }
-
-struct MyVisitor;
 
 #[derive(Deserialize, Default, Debug)]
 pub(crate) struct CodeOwners {
