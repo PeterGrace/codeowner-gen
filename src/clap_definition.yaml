@@ -1,0 +1,16 @@
+---
+name: codeowner-gen
+args:
+  - input_file:
+      required: false
+      short: i
+      long: input_file
+      help: The input yaml file to use
+      takes_value: true
+      value_name: input_file
+  - debug:
+      required: false
+      short: d
+      long: debug
+      takes_value: false
+

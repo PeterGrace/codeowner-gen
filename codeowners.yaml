@@ -1,0 +1,10 @@
+---
+entries:
+  - path: "*"
+    owners:
+    - "@petergrace"
+  - path: "target/debug/deps/itoa-*"
+    owners:
+    - "pete.grace@gmail.com"
+    - "@petergrace"
+    - "@petergrace/teamname"
