@@ -1,5 +1,13 @@
 ---
 entries:
+  - path: "alpha"
+    comment: "Alphabetically speaking, this probably is coming early on"
+    owners:
+    - "@petergrace"
+  - path: "zebra"
+    comment: "This is likely the last entry"
+    owners:
+    - "@petergrace"
   - path: "*"
     owners:
     - "@petergrace"
