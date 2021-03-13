@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  release:
+    types:
+      - created
+jobs:
+  generate: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Cache target folder
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/cache
+            !~/cache/exclude
+            target/
+          key: ${{ runner.os }}-rustbuild
+      - name: Cargo Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          toolchain: nightly
+      - name: Cargo Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          toolchain: stable
+          args: --release
+      - name: Upload artifacts
+        uses: AButler/upload-release-assets@v2.0
+        env:
+        with:
+          files: 'target/release/codeowner-gen'
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
