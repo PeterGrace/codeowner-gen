@@ -9,13 +9,13 @@ lazy_static! {
             static ref EMAIL: Regex = Regex::new(r"^\S+@\S+").unwrap();
 }
 
-#[derive(Deserialize, Default, Debug)]
+#[derive(Deserialize, Default, Debug, PartialEq)]
 pub(crate) struct CodeOwners {
     /// a list of CodeOwner entries, that resolve to a line in CODEOWNERS file.
     pub(crate) entries: Vec<CodeOwner>
 }
 
-#[derive(Deserialize, Default, Debug)]
+#[derive(Deserialize, Default, Debug, PartialEq)]
 pub(crate) struct CodeOwner {
     pub(crate) path: String,
     #[serde(deserialize_with = "owners_from_string")]
@@ -47,7 +47,7 @@ where D: Deserializer<'de> {
     Ok(results)
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub enum Owner {
     /// Owner in the form @username
     Username(String),
