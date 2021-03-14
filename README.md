@@ -3,17 +3,23 @@ I work for a company that likes to PR review everything.
 
 I work for a company that has a staff with an attention to well-formatted, pretty files.
 
-I don't like that CODEOWNERS files, if you have to edit them with a path longer than all previous paths, would require you to re-format the entire CODEOWNERS file, prompting a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again.
+If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. 
 
-This program takes a format that **can** be formatted, yaml, and does a few things:
+This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again.
+
+So, I wrote codeowner-gen with this problem in mind.
+
+codeowner-gen takes a well-formatted yaml file, and does a few things:
 
 - You specify a bunch of paths and one or more owners per path, and it will alphabetize it and ensure that all records are spaced so that output is columnar,
 - unless you specify one or more of the objects as "grouped", in which case it will alphabetize and then group the records together,
 - it processes the Owners you've listed and I might eventually enable the app to validate that the user/team you've specified actually exists,
 - You can specify a comment, per line, and it will render it out for you.
 
+The output is then rendered to the CODEOWNERS file for you, alphabetized and/or grouped by your grouping specification, and properly columned so that the text columns align.
+
 ## Usage
-`codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file.
+`codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file.  If you want to specify an alternate yaml, use `-i` option.
 
 Given a yaml file like below:
 ```
