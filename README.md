@@ -10,6 +10,8 @@ codeowner-gen takes a well-formatted yaml file, and does a few things:
 
 The output is then rendered to the CODEOWNERS file for you, alphabetized and/or grouped by your grouping specification, and properly columned so that the text columns align.
 
+With this workflow, a reviewer can see that the first line of the CODEOWNERS file is a codeowner-gen rendered file and ignore it, in favor of reviewing the changes in the codeowners.yaml file instead.  That file, being yaml, will show changes in a more sane and easy-to-digest format for a PR reviewer.
+
 ## Usage
 `codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file.  If you want to specify an alternate yaml, use `-i` option.
 
