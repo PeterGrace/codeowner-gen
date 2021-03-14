@@ -23,5 +23,5 @@ jobs:
       - name: Upload artifacts
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: 'target/${{ matrix.target}}/release/codeowner-gen*'
+          files: 'target/${{matrix.target}}/release/codeowner-gen;target/${{matrix.target}}/release/codeowner-gen.exe'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
