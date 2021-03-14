@@ -1,13 +1,5 @@
 # codeowner-gen
-I work for a company that likes to PR review everything.
-
-I work for a company that has a staff with an attention to well-formatted, pretty files.
-
-If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. 
-
-This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again.
-
-So, I wrote codeowner-gen with this problem in mind.
+I work for a company that likes to PR review everything.  I also work for a company that has a staff with an attention to well-formatted, pretty files.  If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed.  This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again.  So, I wrote codeowner-gen with this problem in mind.
 
 codeowner-gen takes a well-formatted yaml file, and does a few things:
 
