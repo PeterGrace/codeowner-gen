@@ -12,6 +12,9 @@ The output is then rendered to the CODEOWNERS file for you, alphabetized and/or 
 
 With this workflow, a reviewer can see that the first line of the CODEOWNERS file is a codeowner-gen rendered file and ignore it, in favor of reviewing the changes in the codeowners.yaml file instead.  That file, being yaml, will show changes in a more sane and easy-to-digest format for a PR reviewer.
 
+## How-to install
+`cargo install --git https://github.com/PeterGrace/codeowner-gen.git --tag v0.1.6`
+
 ## Usage
 `codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file.  If you want to specify an alternate yaml, use `-i` option.
 
