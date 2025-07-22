@@ -1,33 +1,50 @@
+#[macro_use] extern crate tracing;
 mod structs;
 
 #[cfg(test)]
 mod tests;
+mod cli_args;
 
-use log::{debug};
-use env_logger;
 use std::fs::{File, OpenOptions};
-use clap::{App, load_yaml};
+use clap::Parser;
 use std::io::{Read, Write};
 use crate::structs::CodeOwners;
 use anyhow::{Result, bail};
+use tracing_subscriber::{EnvFilter, Registry, prelude::*};
+use tracing_subscriber::fmt::format::FmtSpan;
+use crate::cli_args::CliArgs;
 
 static COMPRESSED_DEPENDENCY_LIST: &[u8] = auditable::inject_dependency_list!();
 
 fn main() -> Result<()> {
-    let yaml = load_yaml!("clap_definition.yaml");
-    let matches = App::from_yaml(yaml).get_matches();
-    match matches.is_present("debug") {
-        true => { std::env::set_var("RUST_LOG", "debug") }
-        false => ()
-    };
-    env_logger::init();
+    //region console logging
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("warn"))?;
+    let format_layer = tracing_subscriber::fmt::layer()
+        .event_format(
+            tracing_subscriber::fmt::format()
+                .with_file(true)
+                .with_thread_ids(true)
+                .with_thread_names(true)
+                .with_line_number(true),
+        )
+        .with_span_events(FmtSpan::NONE);
+
+
+    let subscriber = Registry::default()
+        .with(filter_layer)
+        .with(format_layer);
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing subscriber");
+    //endregion
+
+    let matches = CliArgs::parse();
     debug!(
         "codeowner-gen cargover:{} githash:{} auditable_count:{}",
         env!("CARGO_PKG_VERSION"),
         env!("GIT_HASH"),
         COMPRESSED_DEPENDENCY_LIST.len()
     );
-    let filename = matches.value_of("input_file").unwrap_or("codeowners.yaml");
+    let filename = matches.input_file.unwrap_or("./codeowners.yaml".into());
     let mut file = File::open(filename)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
