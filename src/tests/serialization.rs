@@ -1,18 +1,17 @@
-use crate::lib::{CodeOwners, CodeOwner, Owner};
-use serde::Deserialize;
+use crate::structs::{CodeOwners, CodeOwner, Owner};
 use serde_yaml;
 
 #[test]
 fn test_single_username()
 {
-    const input_data: &str = "
+    const INPUT_DATA: &str = "
 ---
 entries:
   - path: \"*\"
     owners:
       - \"@petergrace\"
 ";
-    let value = serde_yaml::from_str::<CodeOwners>(input_data).unwrap();
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
         entries: vec![
             CodeOwner{
@@ -29,14 +28,14 @@ entries:
 #[test]
 fn test_single_team()
 {
-    const input_data: &str = "
+    const INPUT_DATA: &str = "
 ---
 entries:
   - path: \"*\"
     owners:
       - \"@my/team\"
 ";
-    let value = serde_yaml::from_str::<CodeOwners>(input_data).unwrap();
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
         entries: vec![
             CodeOwner{
@@ -53,14 +52,14 @@ entries:
 #[test]
 fn test_single_email()
 {
-    const input_data: &str = "
+    const INPUT_DATA: &str = "
 ---
 entries:
   - path: \"*\"
     owners:
       - \"pete.grace@gmail.com\"
 ";
-    let value = serde_yaml::from_str::<CodeOwners>(input_data).unwrap();
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
         entries: vec![
             CodeOwner{
@@ -77,7 +76,7 @@ entries:
 #[test]
 fn test_multi_multi()
 {
-    const input_data: &str = "
+    const INPUT_DATA: &str = "
 ---
 entries:
   - path: \"foo/\"
@@ -89,7 +88,7 @@ entries:
       - \"@petergrace\"
       - \"pete.grace@gmail.com\"
 ";
-    let value = serde_yaml::from_str::<CodeOwners>(input_data).unwrap();
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
         entries: vec![
             CodeOwner{
@@ -119,7 +118,7 @@ entries:
 #[test]
 fn test_single_with_comment_group()
 {
-    const input_data: &str = "
+    const INPUT_DATA: &str = "
 ---
 entries:
   - path: \"*\"
@@ -128,7 +127,7 @@ entries:
     owners:
       - \"@petergrace\"
 ";
-    let value = serde_yaml::from_str::<CodeOwners>(input_data).unwrap();
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
         entries: vec![
             CodeOwner{

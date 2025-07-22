@@ -1,4 +1,4 @@
-mod lib;
+mod structs;
 
 #[cfg(test)]
 mod tests;
@@ -8,7 +8,7 @@ use env_logger;
 use std::fs::{File, OpenOptions};
 use clap::{App, load_yaml};
 use std::io::{Read, Write};
-use crate::lib::CodeOwners;
+use crate::structs::CodeOwners;
 use anyhow::{Result, bail};
 
 static COMPRESSED_DEPENDENCY_LIST: &[u8] = auditable::inject_dependency_list!();

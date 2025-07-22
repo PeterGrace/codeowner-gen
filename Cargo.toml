@@ -7,15 +7,15 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-auditable = "0.1.0"
-serde = { version = "1.0", features = ["derive"]}
-anyhow = "1.0"
+auditable = "0.2.0"
+serde = { version = "1.0.219", features = ["derive"]}
+anyhow = "1.0.98"
 regex = "1.4"
-lazy_static = "1.4"
-serde_yaml = "0.8"
-log = "0.4"
+lazy_static = "1.5.0"
+serde_yaml = "0.9.34+deprecated"
+log = "0.4.27"
 env_logger = "0.8"
-clap = {version = "3", features = ["suggestions", "color", "yaml"]}
+clap = {version = "3.2.25", features = ["suggestions", "color", "yaml"]}
 
 [build-dependencies]
-auditable-build = "0.1.0"
+auditable-build = "0.2.0"
