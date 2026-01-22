@@ -48,6 +48,7 @@ where D: Deserializer<'de> {
 }
 
 #[derive(Deserialize, Debug, PartialEq)]
+#[derive(Eq, Hash, PartialEq)]
 pub enum Owner {
     /// Owner in the form @username
     Username(String),
