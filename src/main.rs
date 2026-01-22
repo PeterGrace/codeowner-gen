@@ -5,10 +5,11 @@ mod structs;
 mod tests;
 mod cli_args;
 
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use clap::Parser;
 use std::io::{Read, Write};
-use crate::structs::CodeOwners;
+use crate::structs::{CodeOwners, Owner};
 use anyhow::{Result, bail};
 use tracing_subscriber::{EnvFilter, Registry, prelude::*};
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -45,6 +46,8 @@ fn main() -> Result<()> {
         COMPRESSED_DEPENDENCY_LIST.len()
     );
     let filename = matches.input_file.unwrap_or("./codeowners.yaml".into());
+
+    //region read input + process
     let mut file = File::open(filename)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
@@ -64,13 +67,38 @@ fn main() -> Result<()> {
             None => ()
         };
     }
+    //endregion
+    //region validate records, if requested
+    if matches.validate {
+        if let Ok(token) = std::env::var("GITHUB_TOKEN") {
+            let client = reqwest::blocking::Client::new();
+            let mut owners_memoized: HashMap<Owner, bool> = HashMap::new();
+
+            let mut headers = reqwest::header::HeaderMap::new();
+            headers.insert("Authorization", format!("Bearer {}", token).parse()?);
+            headers.insert("Accept", "application/vnd.github.v3+json".parse()?);
+            headers.insert("X-GitHub-Api-Version", "2022-11-28".parse()?);
+
+            for code_owner in &code_owners.entries {
+                for owner in code_owner.owners.iter() {
+                    if let Some(memo) = owners_memoized.get(owner) {
+                        if !memo {
+                            warn!("Owner {} not found in GitHub API", owner);
+                        }
+                    } else {}
+                }
+            }
+            } else {
+            error!("GITHUB_TOKEN environment variable not set. Cannot validate records.");
+        }
+    }
+    //endregion
+
+    //region Sort results and write file.
     code_owners.entries.sort_by_key(|x| x.path.clone());
     if grouped {
         code_owners.entries.sort_by_key(|x| x.group.clone());
     };
-
-
-    // And now, to write the file.
     let mut fd = OpenOptions::new()
         .create(true)
         .write(true)
@@ -106,4 +134,5 @@ fn main() -> Result<()> {
         fd.write_all(format!("{:width$} {}\n", co.path, owners, width = longest_path).as_bytes())?;
     }
     Ok(())
+    //endregion
 }
