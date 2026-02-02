@@ -1,5 +1,6 @@
 #[macro_use] extern crate tracing;
 mod structs;
+mod teams;
 
 #[cfg(test)]
 mod tests;
@@ -52,6 +53,9 @@ fn main() -> Result<()> {
         Ok(v) => v,
         Err(e) => bail!("Unable to parse config file: {:#?}", e)
     };
+
+    code_owners.entries = teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
+
     let mut longest_path = 0;
     let mut grouped = false;
     // for mvp, find longest path first...

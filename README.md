@@ -1,5 +1,6 @@
 # codeowner-gen
-I work for a company that likes to PR review everything.  I also work for a company that has a staff with an attention to well-formatted, pretty files.  If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed.  This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again.  So, I wrote codeowner-gen with this problem in mind.
+
+I work for a company that likes to PR review everything. I also work for a company that has a staff with an attention to well-formatted, pretty files. If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again. So, I wrote codeowner-gen with this problem in mind.
 
 codeowner-gen takes a well-formatted yaml file, and does a few things:
 
@@ -10,40 +11,127 @@ codeowner-gen takes a well-formatted yaml file, and does a few things:
 
 The output is then rendered to the CODEOWNERS file for you, alphabetized and/or grouped by your grouping specification, and properly columned so that the text columns align.
 
-With this workflow, a reviewer can see that the first line of the CODEOWNERS file is a codeowner-gen rendered file and ignore it, in favor of reviewing the changes in the codeowners.yaml file instead.  That file, being yaml, will show changes in a more sane and easy-to-digest format for a PR reviewer.
+With this workflow, a reviewer can see that the first line of the CODEOWNERS file is a codeowner-gen rendered file and ignore it, in favor of reviewing the changes in the codeowners.yaml file instead. That file, being yaml, will show changes in a more sane and easy-to-digest format for a PR reviewer.
 
 ## How-to install
+
 `cargo install --git https://github.com/PeterGrace/codeowner-gen.git --tag v0.2.0`
 
 ## Usage
-`codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file.  If you want to specify an alternate yaml, use `-i` option.
 
-Given a yaml file like below:
-```
+`codeowner-gen` in a directory with a well-formatted codeowners.yaml will output a CODEOWNERS file. If you want to specify an alternate yaml, use `-i` option.
+
+### Entries Format
+
+The traditional format uses an `entries` array where each entry specifies a path and its owners:
+
+```yaml
 ---
 entries:
   - path: "alpha"
     comment: "Alphabetically speaking, this probably is coming early on"
     group: "phonetic"
     owners:
-    - "@petergrace"
+      - "@petergrace"
   - path: "zebra"
     comment: "This is likely the last entry"
     group: "phonetic"
     owners:
-    - "@petergrace"
+      - "@petergrace"
   - path: "*"
     group: "main"
     owners:
-    - "@petergrace"
+      - "@petergrace"
   - path: "target/debug/deps/itoa-*"
     owners:
-    - "pete.grace@gmail.com"
-    - "@petergrace"
-    - "@petergrace/teamname"
+      - "pete.grace@gmail.com"
+      - "@petergrace"
+      - "@petergrace/teamname"
+```
+
+### Teams Format
+
+Alternatively, you can use the `teams` format which maps owners to a list of paths they own. This is useful when you want to manage ownership by team rather than by path:
+
+```yaml
+---
+teams:
+  "@petergrace":
+    - "alpha"
+    - "zebra"
+  "@myorg/platform-team":
+    - "src/"
+    - "lib/"
+  "pete.grace@gmail.com":
+    - "docs/"
+```
+
+### Teams Format with Groups
+
+Paths in the teams format can also include a `group` field. Use an object with `path` and `group` instead of a simple string:
+
+```yaml
+---
+teams:
+  "@petergrace":
+    - path: "src/"
+      group: "core"
+    - "lib/"
+  "@myorg/platform-team":
+    - path: "infra/"
+      group: "infrastructure"
+```
+
+### Mixed Format
+
+You can combine both formats. When the same path appears in both `teams` and `entries`, owners are merged and the entry's metadata (comment/group) is preserved:
+
+```yaml
+---
+teams:
+  "@myorg/team":
+    - "src/"
+entries:
+  - path: "src/"
+    comment: "Core source code"
+    owners:
+      - "@admin"
+```
+
+This results in `src/` having owners `@myorg/team @admin` with the comment "Core source code".
+
+**Note:** If the same path has a `group` defined in both `entries` and `teams`, the entry's group takes precedence. The team's group is only applied if the entry doesn't already have a group.
+
+### Example Output
+
+Given a yaml file like below:
+
+```yaml
+---
+entries:
+  - path: "alpha"
+    comment: "Alphabetically speaking, this probably is coming early on"
+    group: "phonetic"
+    owners:
+      - "@petergrace"
+  - path: "zebra"
+    comment: "This is likely the last entry"
+    group: "phonetic"
+    owners:
+      - "@petergrace"
+  - path: "*"
+    group: "main"
+    owners:
+      - "@petergrace"
+  - path: "target/debug/deps/itoa-*"
+    owners:
+      - "pete.grace@gmail.com"
+      - "@petergrace"
+      - "@petergrace/teamname"
 ```
 
 The codeowners-gen program will output:
+
 ```
 # Generated by codeowner-gen v0.1.0/2db3d0dbd7ece3182de63b440b07379cb19b49cd
 #
