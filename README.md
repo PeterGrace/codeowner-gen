@@ -82,6 +82,53 @@ teams:
       group: "infrastructure"
 ```
 
+### Owner Groups
+
+Owner groups let you define reusable collections of owners that can be referenced by name. This is useful when the same set of owners appears in multiple places:
+
+```yaml
+---
+owner_groups:
+  - name: platform_team
+    owners:
+      - "@alice"
+      - "@bob"
+      - "@myorg/platform"
+  - name: security_team
+    owners:
+      - "@security-lead"
+      - "@myorg/security"
+```
+
+Once defined, owner groups can be referenced by their name (without `@`) in both `entries` and `teams`:
+
+```yaml
+---
+owner_groups:
+  - name: platform_team
+    owners:
+      - "@alice"
+      - "@bob"
+
+entries:
+  - path: "src/"
+    owners:
+      - "platform_team"
+      - "@extra-reviewer"
+
+teams:
+  platform_team:
+    - "lib/"
+    - "infra/"
+```
+
+In this example:
+
+- `src/` will have owners `@alice @bob @extra-reviewer`
+- `lib/` and `infra/` will each have owners `@alice @bob`
+
+**Note:** Owner groups cannot reference other owner groups (no nesting). The owners within an owner group must be valid GitHub usernames (`@user`), teams (`@org/team`), or email addresses.
+
 ### Mixed Format
 
 You can combine both formats. When the same path appears in both `teams` and `entries`, owners are merged and the entry's metadata (comment/group) is preserved:

@@ -1,4 +1,4 @@
-use crate::structs::{CodeOwners, CodeOwner, Owner, TeamPath};
+use crate::structs::{CodeOwners, CodeOwner, Owner, OwnerGroup, TeamPath};
 use std::collections::HashMap;
 use serde_yaml;
 
@@ -21,6 +21,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner{
                 comment: None,
@@ -46,6 +47,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner{
                 comment: None,
@@ -71,6 +73,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner{
                 comment: None,
@@ -101,6 +104,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner{
                 comment: None,
@@ -142,6 +146,7 @@ entries:
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner{
                 comment: Some(String::from("All the things")),
@@ -175,6 +180,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
     };
@@ -201,6 +207,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
     };
@@ -226,6 +233,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
     };
@@ -256,6 +264,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![
             CodeOwner {
                 comment: Some(String::from("Needs metadata")),
@@ -273,10 +282,11 @@ teams:
 #[test]
 fn test_invalid_owner_in_teams()
 {
+    // Invalid owner with special characters that aren't allowed
     const INPUT_DATA: &str = "
 ---
 teams:
-  \"invalid-owner\":
+  \"invalid!owner\":
     - \"src/\"
 ";
     let result = serde_yaml::from_str::<CodeOwners>(INPUT_DATA);
@@ -289,6 +299,32 @@ teams:
 }
 
 #[test]
+fn test_owner_group_ref_in_teams_is_parsed()
+{
+    const INPUT_DATA: &str = "
+---
+teams:
+  \"my_team_group\":
+    - \"src/\"
+";
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+    let mut expected_teams = HashMap::new();
+
+    expected_teams.insert(
+        Owner::OwnerGroupRef(String::from("my_team_group")),
+        vec![team_path("src/")]
+    );
+
+    let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
+        entries: vec![],
+        teams: expected_teams,
+    };
+
+    assert_eq!(value, control)
+}
+
+#[test]
 fn test_empty_config()
 {
     const INPUT_DATA: &str = "---";
@@ -296,9 +332,107 @@ fn test_empty_config()
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        owner_groups: vec![],
         entries: vec![],
         teams: HashMap::new(),
     };
 
     assert_eq!(value, control)
+}
+
+#[test]
+fn test_owner_groups_parsing()
+{
+    const INPUT_DATA: &str = "
+---
+owner_groups:
+  - name: my_group
+    owners:
+      - \"@alice\"
+      - \"@org/team\"
+entries:
+  - path: \"src/\"
+    owners:
+      - \"my_group\"
+";
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+
+    let control: CodeOwners = CodeOwners {
+        owner_groups: vec![
+            OwnerGroup {
+                name: String::from("my_group"),
+                owners: vec![
+                    Owner::Username(String::from("@alice")),
+                    Owner::Team(String::from("@org/team"))
+                ]
+            }
+        ],
+        entries: vec![
+            CodeOwner {
+                comment: None,
+                group: None,
+                path: String::from("src/"),
+                owners: vec![Owner::OwnerGroupRef(String::from("my_group"))]
+            }
+        ],
+        teams: HashMap::new(),
+    };
+
+    assert_eq!(value, control)
+}
+
+#[test]
+fn test_owner_groups_with_teams()
+{
+    const INPUT_DATA: &str = "
+---
+owner_groups:
+  - name: bolt_team
+    owners:
+      - \"@bolt-ai\"
+      - \"@bolt-core\"
+teams:
+  bolt_team:
+    - \"/foo/\"
+    - \"/bar/\"
+";
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+
+    let mut expected_teams = HashMap::new();
+
+    expected_teams.insert(
+        Owner::OwnerGroupRef(String::from("bolt_team")),
+        vec![team_path("/foo/"), team_path("/bar/")]
+    );
+
+    let control: CodeOwners = CodeOwners {
+        owner_groups: vec![
+            OwnerGroup {
+                name: String::from("bolt_team"),
+                owners: vec![
+                    Owner::Username(String::from("@bolt-ai")),
+                    Owner::Username(String::from("@bolt-core"))
+                ]
+            }
+        ],
+        entries: vec![],
+        teams: expected_teams,
+    };
+
+    assert_eq!(value, control)
+}
+
+#[test]
+fn test_nested_owner_group_refs_not_allowed()
+{
+    const INPUT_DATA: &str = "
+---
+owner_groups:
+  - name: group_a
+    owners:
+      - \"group_b\"
+";
+    let result = serde_yaml::from_str::<CodeOwners>(INPUT_DATA);
+
+    assert!(result.is_err());
 }
