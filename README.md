@@ -1,13 +1,15 @@
 # codeowner-gen
 
-I work for a company that likes to PR review everything. I also work for a company that has a staff with an attention to well-formatted, pretty files. If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again. So, I wrote codeowner-gen with this problem in mind.
+When I wrote this project originally, I worked for a company that has a staff with an attention to well-formatted, pretty files. If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again. So, I wrote codeowner-gen with this problem in mind.
 
 codeowner-gen takes a well-formatted yaml file, and does a few things:
 
-- You specify a bunch of paths and one or more owners per path, and it will alphabetize it and ensure that all records are spaced so that output is columnar,
+- You specify a bunch of paths and one or more owners per path, and it will ensure that all records are spaced so that output is columnar,
+- You specify one or more `owner_groups` which is a group of people or teams, and they can then be assigned to paths,
+- the output will be alphabetized,
 - unless you specify one or more of the objects as "grouped", in which case it will alphabetize and then group the records together,
 - it processes the Owners you've listed and I might eventually enable the app to validate that the user/team you've specified actually exists,
-- You can specify a comment, per line, and it will render it out for you.
+- You can specify a comment, per path entry, and it will render it out for you.
 
 The output is then rendered to the CODEOWNERS file for you, alphabetized and/or grouped by your grouping specification, and properly columned so that the text columns align.
 
@@ -15,7 +17,7 @@ With this workflow, a reviewer can see that the first line of the CODEOWNERS fil
 
 ## How-to install
 
-`cargo install --git https://github.com/PeterGrace/codeowner-gen.git --tag v0.2.0`
+`cargo install --git https://github.com/PeterGrace/codeowner-gen.git --tag v0.3.1`
 
 ## Usage
 
