@@ -1,6 +1,7 @@
 #[macro_use] extern crate tracing;
 mod structs;
 mod teams;
+mod owner_groups;
 
 #[cfg(test)]
 mod tests;
@@ -54,7 +55,17 @@ fn main() -> Result<()> {
         Err(e) => bail!("Unable to parse config file: {:#?}", e)
     };
 
-    code_owners.entries = teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
+    // expand owner group references before merging
+    let (expanded_entries, expanded_teams) = match owner_groups::expand_owner_groups(
+        &code_owners.owner_groups,
+        code_owners.entries,
+        code_owners.teams,
+    ) {
+        Ok(v) => v,
+        Err(err) => bail!("Invalid owner group reference: {}", err)
+    };
+
+    code_owners.entries = teams::merge_teams_into_entries(expanded_entries, expanded_teams);
 
     let mut longest_path = 0;
     let mut grouped = false;

@@ -11,8 +11,21 @@ lazy_static! {
     static ref EMAIL: Regex = Regex::new(r"^\S+@\S+").unwrap();
 }
 
+/// Defines a group of owners that can be referenced by name
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub(crate) struct OwnerGroup {
+    pub(crate) name: String,
+    /// Owners in this group (must be valid owners, not other group refs)
+    #[serde(deserialize_with = "strict_owners_from_string")]
+    pub(crate) owners: Vec<Owner>,
+}
+
 #[derive(Deserialize, Default, Debug, PartialEq)]
 pub(crate) struct CodeOwners {
+    /// a list of owner group definitions that can be referenced by name
+    #[serde(default)]
+    pub(crate) owner_groups: Vec<OwnerGroup>,
+
     /// a list of CodeOwner entries, that resolve to a line in CODEOWNERS file.
     #[serde(default)]
     pub(crate) entries: Vec<CodeOwner>,
@@ -103,6 +116,20 @@ fn owners_from_string<'de, D>(input: D) -> Result<Vec<Owner>, D::Error>
 where
     D: Deserializer<'de>,
 {
+    owners_from_string_internal(input, true)
+}
+
+fn strict_owners_from_string<'de, D>(input: D) -> Result<Vec<Owner>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    owners_from_string_internal(input, false)
+}
+
+fn owners_from_string_internal<'de, D>(input: D, allow_group_refs: bool) -> Result<Vec<Owner>, D::Error>
+where
+    D: Deserializer<'de>,
+{
     let mut results: Vec<Owner> = vec![];
     let input_strings: Vec<String> = Vec::deserialize(input)?;
 
@@ -114,14 +141,21 @@ where
                 results.push(Owner::Username(obj.to_string()))
             } else if EMAIL.is_match(obj) {
                 results.push(Owner::Email(obj.to_string()))
+            } else if allow_group_refs && is_valid_group_name(obj) {
+                results.push(Owner::OwnerGroupRef(obj.to_string()))
             } else {
                 return Err(Error::custom(
-                    "Invalid value for owner. Expected @username, @team/name, or email@email.com",
+                    "Invalid value for owner. Expected @username, @team/name, email@email.com, or owner_group name",
                 ));
             }
         }
     }
     Ok(results)
+}
+
+/// Check if a string is a valid owner group name (alphanumeric, underscores, hyphens)
+fn is_valid_group_name(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -132,6 +166,8 @@ pub enum Owner {
     Team(String),
     /// Owner in the form user@domain.com
     Email(String),
+    /// Reference to an owner group by name (bare string without @)
+    OwnerGroupRef(String),
 }
 
 impl FromStr for Owner {
@@ -144,8 +180,10 @@ impl FromStr for Owner {
             Ok(Owner::Username(s.to_string()))
         } else if EMAIL.is_match(s) {
             Ok(Owner::Email(s.to_string()))
+        } else if is_valid_group_name(s) {
+            Ok(Owner::OwnerGroupRef(s.to_string()))
         } else {
-            Err("Invalid owner format. Expected @username, @org/team, or email@domain.com".into())
+            Err("Invalid owner format. Expected @username, @org/team, email@domain.com, or owner_group name".into())
         }
     }
 }
@@ -153,8 +191,7 @@ impl FromStr for Owner {
 impl std::fmt::Display for Owner {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            // v is a String in both cases
-            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) => v.fmt(f),
+            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) | Owner::OwnerGroupRef(v) => v.fmt(f),
         }
     }
 }
@@ -170,7 +207,7 @@ impl<'de> Deserialize<'de> for Owner {
             type Value = Owner;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string like @username, @org/team, or email@domain.com")
+                formatter.write_str("a string like @username, @org/team, email@domain.com, or owner_group name")
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Owner, E>
