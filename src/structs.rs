@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::de::{Error, Visitor};
+use serde::de::{Error, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -13,13 +13,63 @@ lazy_static! {
 
 #[derive(Deserialize, Default, Debug, PartialEq)]
 pub(crate) struct CodeOwners {
-    /// a list of CodeOwner entries, that resolve to a line in CODEOWNERS file.
+    /// A list of CodeOwner entries, that resolve to a line in CODEOWNERS file
     #[serde(default)]
     pub(crate) entries: Vec<CodeOwner>,
 
-    /// a mapping of owner to list of paths they own
+    /// A mapping of owner(s) to list of paths they own
     #[serde(default)]
-    pub(crate) teams: HashMap<Owner, Vec<TeamPath>>,
+    pub(crate) teams: HashMap<OwnerKey, Vec<TeamPath>>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub(crate) struct OwnerKey(pub(crate) Vec<Owner>);
+
+impl<'de> Deserialize<'de> for OwnerKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct OwnerKeyVisitor;
+
+        impl<'de> Visitor<'de> for OwnerKeyVisitor {
+            type Value = OwnerKey;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str(
+                    "A single owner string like '@alice' or an array like ['@alice', '@bob']",
+                )
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<OwnerKey, E>
+            where
+                E: Error,
+            {
+                let owner = Owner::from_str(value).map_err(Error::custom)?;
+                Ok(OwnerKey(vec![owner]))
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<OwnerKey, A::Error>
+            where
+                A: SeqAccess<'de>,
+            {
+                let mut owners = Vec::new();
+
+                while let Some(value) = seq.next_element::<String>()? {
+                    let owner = Owner::from_str(&value).map_err(Error::custom)?;
+                    owners.push(owner);
+                }
+
+                if owners.is_empty() {
+                    return Err(Error::custom("Owner list cannot be empty"));
+                }
+
+                Ok(OwnerKey(owners))
+            }
+        }
+
+        deserializer.deserialize_any(OwnerKeyVisitor)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -1,13 +1,16 @@
-use crate::structs::{CodeOwner, Owner, TeamPath};
+use crate::structs::{CodeOwner, OwnerKey, TeamPath};
 use std::collections::HashMap;
 
 /// Merges teams mapping into entries, combining owners for duplicate paths.
 /// When the same path appears in both teams and entries, owners are merged
 /// and the entry's metadata (comment/group) is preserved. Groups from teams
 /// are also applied if the entry doesn't already have a group.
+///
+/// The `teams` HashMap supports inline multi-owner keys, where a single
+/// key can contain multiple owners, e.g., ["@alice", "@bob"]: ["src/"].
 pub(crate) fn merge_teams_into_entries(
     entries: Vec<CodeOwner>,
-    teams: HashMap<Owner, Vec<TeamPath>>,
+    teams: HashMap<OwnerKey, Vec<TeamPath>>,
 ) -> Vec<CodeOwner> {
     let mut path_map: HashMap<String, CodeOwner> = HashMap::new();
 
@@ -32,13 +35,15 @@ pub(crate) fn merge_teams_into_entries(
             .or_insert(entry);
     }
 
-    for (owner, team_paths) in teams {
+    for (owner_key, team_paths) in teams {
         for team_path in team_paths {
             path_map
                 .entry(team_path.path.clone())
                 .and_modify(|existing| {
-                    if !existing.owners.contains(&owner) {
-                        existing.owners.push(owner.clone());
+                    for owner in &owner_key.0 {
+                        if !existing.owners.contains(owner) {
+                            existing.owners.push(owner.clone());
+                        }
                     }
 
                     if existing.group.is_none() && team_path.group.is_some() {
@@ -47,7 +52,7 @@ pub(crate) fn merge_teams_into_entries(
                 })
                 .or_insert_with(|| CodeOwner {
                     path: team_path.path,
-                    owners: vec![owner.clone()],
+                    owners: owner_key.0.clone(),
                     comment: None,
                     group: team_path.group,
                 });
@@ -60,6 +65,7 @@ pub(crate) fn merge_teams_into_entries(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::structs::Owner;
 
     fn path(s: &str) -> TeamPath {
         TeamPath {
@@ -75,12 +81,20 @@ mod tests {
         }
     }
 
+    fn key(owner: Owner) -> OwnerKey {
+        OwnerKey(vec![owner])
+    }
+
+    fn keys(owners: Vec<Owner>) -> OwnerKey {
+        OwnerKey(owners)
+    }
+
     #[test]
     fn test_merge_teams_creates_entries() {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Username(String::from("@petergrace")),
+            key(Owner::Username(String::from("@petergrace"))),
             vec![path("src/"), path("lib/")],
         );
 
@@ -99,12 +113,12 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Username(String::from("@alice")),
+            key(Owner::Username(String::from("@alice"))),
             vec![path("src/")],
         );
 
         teams.insert(
-            Owner::Team(String::from("@org/team")),
+            key(Owner::Team(String::from("@org/team"))),
             vec![path("src/")],
         );
 
@@ -127,7 +141,7 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Team(String::from("@org/team")),
+            key(Owner::Team(String::from("@org/team"))),
             vec![path("src/")],
         );
 
@@ -151,7 +165,7 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Username(String::from("@alice")),
+            key(Owner::Username(String::from("@alice"))),
             vec![path("src/")],
         );
 
@@ -167,7 +181,7 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Username(String::from("@petergrace")),
+            key(Owner::Username(String::from("@petergrace"))),
             vec![path_with_group("src/", "core")],
         );
 
@@ -190,7 +204,7 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Team(String::from("@org/team")),
+            key(Owner::Team(String::from("@org/team"))),
             vec![path_with_group("src/", "core")],
         );
 
@@ -213,7 +227,7 @@ mod tests {
         let mut teams = HashMap::new();
 
         teams.insert(
-            Owner::Team(String::from("@org/team")),
+            key(Owner::Team(String::from("@org/team"))),
             vec![path_with_group("src/", "core")],
         );
 
@@ -281,5 +295,120 @@ teams:
         let lib_entry = merged.iter().find(|e| e.path == "lib/").unwrap();
 
         assert_eq!(lib_entry.group, None);
+    }
+
+    #[test]
+    fn test_inline_multi_owner_teams() {
+        let mut teams = HashMap::new();
+
+        teams.insert(
+            keys(vec![
+                Owner::Username(String::from("@alice")),
+                Owner::Username(String::from("@bob")),
+                Owner::Team(String::from("@org/team")),
+            ]),
+            vec![path("src/"), path("lib/")],
+        );
+
+        let result = merge_teams_into_entries(vec![], teams);
+
+        assert_eq!(result.len(), 2);
+
+        for entry in &result {
+            assert_eq!(entry.owners.len(), 3);
+
+            let owner_strings: Vec<String> = entry.owners.iter().map(|o| o.to_string()).collect();
+
+            assert!(owner_strings.contains(&String::from("@alice")));
+            assert!(owner_strings.contains(&String::from("@bob")));
+            assert!(owner_strings.contains(&String::from("@org/team")));
+        }
+    }
+
+    #[test]
+    fn test_inline_multi_owner_teams_yaml_parsing() {
+        use crate::structs::CodeOwners;
+
+        const INPUT_DATA: &str = r#"
+---
+teams:
+  ["@alice", "@bob", "@org/team"]:
+    - "src/"
+    - "lib/"
+  "@carol":
+    - "docs/"
+"#;
+        let code_owners: CodeOwners = serde_yaml::from_str(INPUT_DATA).unwrap();
+
+        let merged = merge_teams_into_entries(code_owners.entries, code_owners.teams);
+
+        assert_eq!(merged.len(), 3);
+
+        let src_entry = merged.iter().find(|e| e.path == "src/").unwrap();
+
+        assert_eq!(src_entry.owners.len(), 3);
+
+        let lib_entry = merged.iter().find(|e| e.path == "lib/").unwrap();
+
+        assert_eq!(lib_entry.owners.len(), 3);
+
+        let docs_entry = merged.iter().find(|e| e.path == "docs/").unwrap();
+
+        assert_eq!(docs_entry.owners.len(), 1);
+        assert_eq!(docs_entry.owners[0].to_string(), "@carol");
+    }
+
+    #[test]
+    fn test_inline_multi_owner_deduplicates() {
+        let entries = vec![CodeOwner {
+            path: String::from("src/"),
+            owners: vec![Owner::Username(String::from("@alice"))],
+            comment: None,
+            group: None,
+        }];
+
+        let mut teams = HashMap::new();
+
+        teams.insert(
+            keys(vec![
+                Owner::Username(String::from("@alice")),
+                Owner::Username(String::from("@bob")),
+            ]),
+            vec![path("src/")],
+        );
+
+        let result = merge_teams_into_entries(entries, teams);
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].owners.len(), 2);
+    }
+
+    #[test]
+    fn test_inline_multi_owner_with_groups() {
+        use crate::structs::CodeOwners;
+
+        const INPUT_DATA: &str = r#"
+---
+teams:
+  ["@alice", "@bob"]:
+    - path: "src/"
+      group: "core"
+    - "lib/"
+"#;
+        let code_owners: CodeOwners = serde_yaml::from_str(INPUT_DATA).unwrap();
+
+        let merged = merge_teams_into_entries(code_owners.entries, code_owners.teams);
+
+        assert_eq!(merged.len(), 2);
+
+        let src_entry = merged.iter().find(|e| e.path == "src/").unwrap();
+
+        assert_eq!(src_entry.group, Some(String::from("core")));
+        assert_eq!(src_entry.owners.len(), 2);
+
+        let lib_entry = merged.iter().find(|e| e.path == "lib/").unwrap();
+
+        assert_eq!(lib_entry.group, None);
+        assert_eq!(lib_entry.owners.len(), 2);
     }
 }

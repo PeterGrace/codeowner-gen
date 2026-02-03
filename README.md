@@ -82,6 +82,35 @@ teams:
       group: "infrastructure"
 ```
 
+### Inline Multi-Owner Teams
+
+You can specify multiple owners for the same set of paths using a YAML array as the key. This is useful when multiple teams or individuals share ownership of the same directories:
+
+```yaml
+---
+teams:
+  ["@alice", "@bob", "@myorg/platform-team"]:
+    - "src/"
+    - "lib/"
+  "@carol":
+    - "docs/"
+```
+
+This results in `src/` and `lib/` each having all three owners (`@alice`, `@bob`, and `@myorg/platform-team`), while `docs/` is owned only by `@carol`.
+
+You can also combine inline multi-owner teams with groups:
+
+```yaml
+---
+teams:
+  ["@alice", "@bob"]:
+    - path: "src/"
+      group: "core"
+    - "lib/"
+```
+
+Each owner in the array must be a valid owner format (`@username`, `@org/team`, or `email@domain.com`).
+
 ### Mixed Format
 
 You can combine both formats. When the same path appears in both `teams` and `entries`, owners are merged and the entry's metadata (comment/group) is preserved:
