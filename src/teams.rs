@@ -5,6 +5,7 @@ use std::collections::HashMap;
 /// When the same path appears in both teams and entries, owners are merged
 /// and the entry's metadata (comment/group) is preserved. Groups from teams
 /// are also applied if the entry doesn't already have a group.
+/// Owners are ordered alphabetically by type, with users first, then teams.
 pub(crate) fn merge_teams_into_entries(
     entries: Vec<CodeOwner>,
     teams: HashMap<Owner, Vec<TeamPath>>,
@@ -54,7 +55,13 @@ pub(crate) fn merge_teams_into_entries(
         }
     }
 
-    path_map.into_values().collect()
+    path_map
+        .into_values()
+        .map(|mut entry| {
+            entry.owners.sort();
+            entry
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -281,5 +288,27 @@ teams:
         let lib_entry = merged.iter().find(|e| e.path == "lib/").unwrap();
 
         assert_eq!(lib_entry.group, None);
+    }
+
+    #[test]
+    fn test_merge_teams_sorts_owners_alphabetically_by_type() {
+        let alice = Owner::Username(String::from("@alice"));
+        let cornelius = Owner::Username(String::from("@cornelius"));
+        let zelda = Owner::Username(String::from("@zelda"));
+        let actual_humans = Owner::Team(String::from("@actual-humans"));
+        let zebras = Owner::Team(String::from("@zebras"));
+
+        let mut teams = HashMap::new();
+        teams.insert(zelda.clone(), vec![path("src/")]);
+        teams.insert(cornelius.clone(), vec![path("src/")]);
+        teams.insert(zebras.clone(), vec![path("src/")]);
+        teams.insert(actual_humans.clone(), vec![path("src/")]);
+        teams.insert(alice.clone(), vec![path("src/")]);
+
+        let result = merge_teams_into_entries(vec![], teams);
+        assert_eq!(
+            result[0].owners,
+            vec![alice, cornelius, zelda, actual_humans, zebras]
+        );
     }
 }
