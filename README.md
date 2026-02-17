@@ -17,7 +17,7 @@ With this workflow, a reviewer can see that the first line of the CODEOWNERS fil
 
 ## How-to install
 
-`cargo install --git https://github.com/PeterGrace/codeowner-gen.git --tag v0.3.1`
+`cargo install --git https://github.com/PeterGrace/codeowner-gen.git`
 
 ## Usage
 
