@@ -1,5 +1,22 @@
 # codeowner-gen
 
+## GitHub Actions users, read this!
+This action will pull the specified version of codeowner-gen and execute it against your codeowners.yaml file, outputting a CODEOWNERS file at the path you specify.  You can have the script commit back the change into the repo automatically.
+
+To use this tool in your repository, add this stanza to your github actions, changing the arguments as needed:
+```yaml
+      - name: Run codeowner-gen
+        uses: PeterGrace/codeowner-gen@latest
+        with:
+          config-file: <path-to-codeowners.yaml>
+          output-file: <path-to-expected-CODEOWNERS-file>
+          commit: [true|false]  ### optional
+          commit-message: 'your commit message' ### optional
+          version: [latest|0.4.2] ### optional
+```
+
+## Background
+
 When I wrote this project originally, I worked for a company that has a staff with an attention to well-formatted, pretty files. If a change is made to a CODEOWNERS file that would require the file to be re-columned, then the PR would show all lines changed. This would prompt a PR reviewer to have to either click "approve" without considering the content of the file, or actually read the entire CODEOWNERS file again. So, I wrote codeowner-gen with this problem in mind.
 
 codeowner-gen takes a well-formatted yaml file, and does a few things:
