@@ -12,27 +12,49 @@ on:
 jobs:
   test-action:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            output-file: CODEOWNERS-test
+          - os: windows-latest
+            output-file: CODEOWNERS-test-win
+          - os: macos-latest
+            output-file: CODEOWNERS-test-mac
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
-      - name: Run codeowner-gen action
+      - name: Run codeowner-gen action (PR - commit CODEOWNERS)
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest'
         uses: ./
         with:
           config-file: codeowners.yaml
-          output-file: CODEOWNERS-test
+          output-file: CODEOWNERS
+          commit: 'true'
+
+      - name: Run codeowner-gen action (non-PR or non-Linux)
+        if: github.event_name != 'pull_request' || matrix.os != 'ubuntu-latest'
+        uses: ./
+        with:
+          config-file: codeowners.yaml
+          output-file: ${{ matrix.output-file }}
 
       - name: Verify output was created
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            if (!fs.existsSync('CODEOWNERS-test')) {
-              core.setFailed('ERROR: CODEOWNERS-test was not generated');
+            const isPR = '${{ github.event_name }}' === 'pull_request';
+            const isLinux = '${{ matrix.os }}' === 'ubuntu-latest';
+            const outputFile = (isPR && isLinux) ? 'CODEOWNERS' : '${{ matrix.output-file }}';
+            if (!fs.existsSync(outputFile)) {
+              core.setFailed(`ERROR: ${outputFile} was not generated`);
             } else {
-              core.info('SUCCESS: CODEOWNERS-test was generated');
-              core.info(fs.readFileSync('CODEOWNERS-test', 'utf8'));
+              core.info(`SUCCESS: ${outputFile} was generated`);
+              core.info(fs.readFileSync(outputFile, 'utf8'));
             }
