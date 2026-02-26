@@ -20,7 +20,7 @@ jobs:
             use_cross: true
             asset_name: codeowner-gen-x86_64-pc-windows-gnu.exe
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
             use_cross: false
             asset_name: codeowner-gen-x86_64-apple-darwin
           - target: aarch64-apple-darwin
@@ -56,6 +56,10 @@ jobs:
           else
             cp target/${{ matrix.target }}/release/codeowner-gen ${{ matrix.asset_name }}
           fi
+
+      - name: Ad-hoc sign (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --sign - --force ${{ matrix.asset_name }}
 
       - name: Upload artifacts
         uses: AButler/upload-release-assets@v2.0
