@@ -1,0 +1,38 @@
+name: Test Action
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - trunk
+  pull_request:
+    branches:
+      - trunk
+
+jobs:
+  test-action:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run codeowner-gen action
+        uses: ./
+        with:
+          config-file: codeowners.yaml
+          output-file: CODEOWNERS-test
+
+      - name: Verify output was created
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('CODEOWNERS-test')) {
+              core.setFailed('ERROR: CODEOWNERS-test was not generated');
+            } else {
+              core.info('SUCCESS: CODEOWNERS-test was generated');
+              core.info(fs.readFileSync('CODEOWNERS-test', 'utf8'));
+            }
