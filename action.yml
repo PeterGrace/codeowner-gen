@@ -69,7 +69,7 @@ runs:
 
     - name: Run codeowner-gen
       shell: bash
-      run: codeowner-gen -i "${{ inputs.config-file }}" -o "${{ inputs.output-file }}"
+      run: codeowner-gen "${{ inputs.config-file }}" -o "${{ inputs.output-file }}"
 
     - name: Commit CODEOWNERS
       if: inputs.commit == 'true'
