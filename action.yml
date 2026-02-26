@@ -1,0 +1,86 @@
+name: 'codeowner-gen'
+description: 'Generate a CODEOWNERS file from a YAML configuration using codeowner-gen'
+author: 'PeterGrace'
+
+inputs:
+  config-file:
+    description: 'Path to the codeowners YAML configuration file'
+    required: false
+    default: 'codeowners.yaml'
+  output-file:
+    description: 'Path where the CODEOWNERS file should be written'
+    required: false
+    default: 'CODEOWNERS'
+  version:
+    description: 'Version of codeowner-gen to use (e.g., "0.3.2" or "latest")'
+    required: false
+    default: 'latest'
+  commit:
+    description: 'Automatically commit the generated CODEOWNERS file back to the branch'
+    required: false
+    default: 'false'
+  commit-message:
+    description: 'Commit message to use when committing the generated file'
+    required: false
+    default: 'chore: regenerate CODEOWNERS file'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Resolve version
+      id: resolve-version
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        if [ "$VERSION" = "latest" ]; then
+          VERSION=$(curl -sf https://api.github.com/repos/PeterGrace/codeowner-gen/releases/latest \
+            | grep '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Download codeowner-gen (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        curl -sfL -o /usr/local/bin/codeowner-gen \
+          "https://github.com/PeterGrace/codeowner-gen/releases/download/v${{ steps.resolve-version.outputs.version }}/codeowner-gen-x86_64-unknown-linux-gnu"
+        chmod +x /usr/local/bin/codeowner-gen
+
+    - name: Download codeowner-gen (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        curl -sfL -o "$RUNNER_TEMP/codeowner-gen.exe" \
+          "https://github.com/PeterGrace/codeowner-gen/releases/download/v${{ steps.resolve-version.outputs.version }}/codeowner-gen-x86_64-pc-windows-gnu.exe"
+        echo "$RUNNER_TEMP" >> $GITHUB_PATH
+
+    - name: Download codeowner-gen (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        if [ "$(uname -m)" = "arm64" ]; then
+          ASSET="codeowner-gen-aarch64-apple-darwin"
+        else
+          ASSET="codeowner-gen-x86_64-apple-darwin"
+        fi
+        curl -sfL -o /usr/local/bin/codeowner-gen \
+          "https://github.com/PeterGrace/codeowner-gen/releases/download/v${{ steps.resolve-version.outputs.version }}/$ASSET"
+        chmod +x /usr/local/bin/codeowner-gen
+
+    - name: Run codeowner-gen
+      shell: bash
+      run: codeowner-gen -i "${{ inputs.config-file }}" -o "${{ inputs.output-file }}"
+
+    - name: Commit CODEOWNERS
+      if: inputs.commit == 'true'
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add "${{ inputs.output-file }}"
+        if git diff --staged --quiet; then
+          echo "No changes to CODEOWNERS file, skipping commit."
+        else
+          git commit -m "${{ inputs.commit-message }}"
+          git push
+        fi

@@ -4,25 +4,61 @@ on:
   release:
     types:
       - created
-    
+
 jobs:
-  generate: 
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target:
-          - x86_64-pc-windows-gnu
-          - x86_64-unknown-linux-gnu
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+            asset_name: codeowner-gen-x86_64-unknown-linux-gnu
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            use_cross: true
+            asset_name: codeowner-gen-x86_64-pc-windows-gnu.exe
+          - target: x86_64-apple-darwin
+            os: macos-13
+            use_cross: false
+            asset_name: codeowner-gen-x86_64-apple-darwin
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            use_cross: false
+            asset_name: codeowner-gen-aarch64-apple-darwin
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - uses: actions-rs/cargo@v1
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          use-cross: true
-          command: build
-          args: --release --target=${{ matrix.target }}
+          targets: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use_cross == true
+        run: cargo install cross
+
+      - name: Build (native)
+        if: matrix.use_cross == false
+        run: cargo build --release --target=${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.use_cross == true
+        run: cross build --release --target=${{ matrix.target }}
+
+      - name: Rename binary
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == *"windows"* ]]; then
+            cp target/${{ matrix.target }}/release/codeowner-gen.exe ${{ matrix.asset_name }}
+          else
+            cp target/${{ matrix.target }}/release/codeowner-gen ${{ matrix.asset_name }}
+          fi
+
       - name: Upload artifacts
         uses: AButler/upload-release-assets@v2.0
         with:
-          files: 'target/${{matrix.target}}/release/codeowner-gen;target/${{matrix.target}}/release/codeowner-gen.exe'
+          files: ${{ matrix.asset_name }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
