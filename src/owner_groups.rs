@@ -1,6 +1,6 @@
 use crate::structs::{CodeOwner, Owner, OwnerGroup, TeamPath};
 use std::collections::HashMap;
-use std::path::PathBuf;
+#[cfg(test)] use std::path::PathBuf;
 
 /// Expands owner group references in entries and teams to their actual owners.
 /// Returns an error if any owner group reference is not defined.
