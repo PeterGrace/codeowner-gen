@@ -11,8 +11,8 @@ To use this tool in your repository, add this stanza to your github actions, cha
           config-file: <path-to-codeowners.yaml>
           output-file: <path-to-expected-CODEOWNERS-file>
           commit: [true|false]  ### optional
-          commit-message: 'your commit message' ### optional
-          version: [latest|0.4.2] ### optional
+          commit-message: 'your commit message'  ### optional
+          version: [latest|0.4.2]  ### optional
 ```
 
 ## Background
