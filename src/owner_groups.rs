@@ -1,5 +1,6 @@
 use crate::structs::{CodeOwner, Owner, OwnerGroup, TeamPath};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// Expands owner group references in entries and teams to their actual owners.
 /// Returns an error if any owner group reference is not defined.
@@ -106,7 +107,7 @@ mod tests {
         )];
 
         let entries = vec![CodeOwner {
-            path: "src/".to_string(),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::OwnerGroupRef("my_group".to_string())],
             comment: None,
             group: None,
@@ -147,7 +148,7 @@ mod tests {
         teams.insert(
             Owner::OwnerGroupRef("my_group".to_string()),
             vec![TeamPath {
-                path: "src/".to_string(),
+                path: PathBuf::from("src/"),
                 group: None,
             }],
         );
@@ -164,7 +165,7 @@ mod tests {
         let owner_groups = vec![];
 
         let entries = vec![CodeOwner {
-            path: "src/".to_string(),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::OwnerGroupRef("nonexistent".to_string())],
             comment: None,
             group: None,
@@ -190,7 +191,7 @@ mod tests {
         teams.insert(
             Owner::OwnerGroupRef("nonexistent".to_string()),
             vec![TeamPath {
-                path: "src/".to_string(),
+                path: PathBuf::from("src/"),
                 group: None,
             }],
         );
@@ -214,7 +215,7 @@ mod tests {
         )];
 
         let entries = vec![CodeOwner {
-            path: "src/".to_string(),
+            path: PathBuf::from("src/"),
             owners: vec![
                 Owner::Username("@bob".to_string()),
                 Owner::OwnerGroupRef("my_group".to_string()),
@@ -251,7 +252,7 @@ mod tests {
         )];
 
         let entries = vec![CodeOwner {
-            path: "src/".to_string(),
+            path: PathBuf::from("src/"),
             owners: vec![
                 Owner::Username("@alice".to_string()),
                 Owner::OwnerGroupRef("my_group".to_string()),
@@ -272,7 +273,7 @@ mod tests {
         let owner_groups = vec![];
 
         let entries = vec![CodeOwner {
-            path: "src/".to_string(),
+            path: PathBuf::from("src/"),
             owners: vec![
                 Owner::Username("@alice".to_string()),
                 Owner::Team("@org/team".to_string()),
