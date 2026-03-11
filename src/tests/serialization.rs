@@ -1,10 +1,11 @@
+use std::path::PathBuf;
 use crate::structs::{CodeOwners, CodeOwner, Owner, OwnerGroup, TeamPath};
 use std::collections::HashMap;
 use serde_yaml;
 
 fn team_path(s: &str) -> TeamPath {
     TeamPath {
-        path: s.to_string(),
+        path: PathBuf::from(s),
         group: None,
     }
 }
@@ -26,7 +27,7 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                path: String::from("*"),
+                path: PathBuf::from("*"),
                 owners: vec![Owner::Username(String::from("@petergrace"))]
             }
         ],
@@ -52,7 +53,7 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                path: String::from("*"),
+                path: PathBuf::from("*"),
                 owners: vec![Owner::Team(String::from("@my/team"))]
             }
         ],
@@ -78,7 +79,7 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                path: String::from("*"),
+                path: PathBuf::from("*"),
                 owners: vec![Owner::Email(String::from("pete.grace@gmail.com"))]
             }
         ],
@@ -109,7 +110,7 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                path: String::from("foo/"),
+                path: PathBuf::from("foo/"),
                 owners: vec![
                     Owner::Email(String::from("pete.grace@gmail.com")),
                     Owner::Team(String::from("@my/team"))
@@ -118,7 +119,7 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                path: String::from("bar/"),
+                path: PathBuf::from("bar/"),
                 owners: vec![
                     Owner::Username(String::from("@petergrace")),
                     Owner::Email(String::from("pete.grace@gmail.com"))
@@ -151,7 +152,7 @@ entries:
             CodeOwner{
                 comment: Some(String::from("All the things")),
                 group: Some(String::from("primary")),
-                path: String::from("*"),
+                path: PathBuf::from("*"),
                 owners: vec![Owner::Username(String::from("@petergrace"))]
             }
         ],
@@ -269,7 +270,7 @@ teams:
             CodeOwner {
                 comment: Some(String::from("Needs metadata")),
                 group: None,
-                path: String::from("special/*"),
+                path: PathBuf::from("special/*"),
                 owners: vec![Owner::Username(String::from("@admin"))]
             }
         ],
@@ -371,7 +372,7 @@ entries:
             CodeOwner {
                 comment: None,
                 group: None,
-                path: String::from("src/"),
+                path: PathBuf::from("src/"),
                 owners: vec![Owner::OwnerGroupRef(String::from("my_group"))]
             }
         ],
@@ -435,4 +436,30 @@ owner_groups:
     let result = serde_yaml::from_str::<CodeOwners>(INPUT_DATA);
 
     assert!(result.is_err());
+}
+
+#[test]
+fn test_file_path_sorting()
+{
+    const INPUT_DATA: &str = "
+---
+teams:
+  \"@owner\":
+    - \"path-to-a-file\"
+    - \"path/\"
+    - \"another-path-to-a-file\"
+    - \"path/to-a-folder/\"
+";
+    let code_owners = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+    let mut entries = crate::teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
+    entries.sort_by_key(|x| x.path.clone());
+
+    let paths: Vec<&str> = entries.iter().map(|e| e.path.to_str().unwrap()).collect();
+
+    assert_eq!(paths, vec![
+        "another-path-to-a-file",
+        "path/",
+        "path/to-a-folder/",
+        "path-to-a-file",
+    ]);
 }

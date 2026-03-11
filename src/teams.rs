@@ -1,5 +1,6 @@
 use crate::structs::{CodeOwner, Owner, TeamPath};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// Merges teams mapping into entries, combining owners for duplicate paths.
 /// When the same path appears in both teams and entries, owners are merged
@@ -10,7 +11,7 @@ pub(crate) fn merge_teams_into_entries(
     entries: Vec<CodeOwner>,
     teams: HashMap<Owner, Vec<TeamPath>>,
 ) -> Vec<CodeOwner> {
-    let mut path_map: HashMap<String, CodeOwner> = HashMap::new();
+    let mut path_map: HashMap<PathBuf, CodeOwner> = HashMap::new();
 
     for entry in entries {
         path_map
@@ -70,14 +71,14 @@ mod tests {
 
     fn path(s: &str) -> TeamPath {
         TeamPath {
-            path: s.to_string(),
+            path: PathBuf::from(s),
             group: None,
         }
     }
 
     fn path_with_group(s: &str, g: &str) -> TeamPath {
         TeamPath {
-            path: s.to_string(),
+            path: PathBuf::from(s),
             group: Some(g.to_string()),
         }
     }
@@ -95,7 +96,7 @@ mod tests {
 
         assert_eq!(result.len(), 2);
 
-        let paths: Vec<&str> = result.iter().map(|e| e.path.as_str()).collect();
+        let paths: Vec<&str> = result.iter().map(|e| e.path.to_str().unwrap()).collect();
 
         assert!(paths.contains(&"src/"));
         assert!(paths.contains(&"lib/"));
@@ -118,14 +119,14 @@ mod tests {
         let result = merge_teams_into_entries(vec![], teams);
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].path, "src/");
+        assert_eq!(result[0].path.as_os_str(), "src/");
         assert_eq!(result[0].owners.len(), 2);
     }
 
     #[test]
     fn test_merge_preserves_entry_metadata() {
         let entries = vec![CodeOwner {
-            path: String::from("src/"),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: Some(String::from("Core source")),
             group: Some(String::from("main")),
@@ -149,7 +150,7 @@ mod tests {
     #[test]
     fn test_merge_deduplicates_owners() {
         let entries = vec![CodeOwner {
-            path: String::from("src/"),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::Username(String::from("@alice"))],
             comment: None,
             group: None,
@@ -181,14 +182,14 @@ mod tests {
         let result = merge_teams_into_entries(vec![], teams);
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].path, "src/");
+        assert_eq!(result[0].path.as_os_str(), "src/");
         assert_eq!(result[0].group, Some(String::from("core")));
     }
 
     #[test]
     fn test_entry_group_takes_precedence_over_team_group() {
         let entries = vec![CodeOwner {
-            path: String::from("src/"),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: None,
             group: Some(String::from("main")),
@@ -211,7 +212,7 @@ mod tests {
     #[test]
     fn test_team_group_applied_when_entry_has_none() {
         let entries = vec![CodeOwner {
-            path: String::from("src/"),
+            path: PathBuf::from("src/"),
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: None,
             group: None,
@@ -252,7 +253,7 @@ entries:
         let merged = merge_teams_into_entries(code_owners.entries, code_owners.teams);
 
         assert_eq!(merged.len(), 1);
-        assert_eq!(merged[0].path, "src/");
+        assert_eq!(merged[0].path.as_os_str(), "src/");
         assert_eq!(merged[0].comment, Some(String::from("Core source code")));
         assert_eq!(merged[0].group, Some(String::from("core")));
         assert_eq!(merged[0].owners.len(), 2);
@@ -281,11 +282,11 @@ teams:
 
         assert_eq!(merged.len(), 2);
 
-        let src_entry = merged.iter().find(|e| e.path == "src/").unwrap();
+        let src_entry = merged.iter().find(|e| e.path.as_os_str() == "src/").unwrap();
 
         assert_eq!(src_entry.group, Some(String::from("core")));
 
-        let lib_entry = merged.iter().find(|e| e.path == "lib/").unwrap();
+        let lib_entry = merged.iter().find(|e| e.path.as_os_str() == "lib/").unwrap();
 
         assert_eq!(lib_entry.group, None);
     }

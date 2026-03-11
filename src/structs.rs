@@ -3,6 +3,7 @@ use regex::Regex;
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 lazy_static! {
@@ -37,7 +38,7 @@ pub(crate) struct CodeOwners {
 
 #[derive(Debug, PartialEq, Clone)]
 pub(crate) struct TeamPath {
-    pub(crate) path: String,
+    pub(crate) path: PathBuf,
     pub(crate) group: Option<String>,
 }
 
@@ -60,7 +61,7 @@ impl<'de> Deserialize<'de> for TeamPath {
                 E: Error,
             {
                 Ok(TeamPath {
-                    path: value.to_string(),
+                    path: PathBuf::from(value),
                     group: None,
                 })
             }
@@ -69,7 +70,7 @@ impl<'de> Deserialize<'de> for TeamPath {
             where
                 M: serde::de::MapAccess<'de>,
             {
-                let mut path: Option<String> = None;
+                let mut path: Option<PathBuf> = None;
                 let mut group: Option<String> = None;
 
                 while let Some(key) = map.next_key::<String>()? {
@@ -103,7 +104,7 @@ impl<'de> Deserialize<'de> for TeamPath {
 
 #[derive(Deserialize, Default, Debug, PartialEq)]
 pub(crate) struct CodeOwner {
-    pub(crate) path: String,
+    pub(crate) path: PathBuf,
     #[serde(deserialize_with = "owners_from_string")]
     pub(crate) owners: Vec<Owner>,
     #[serde(skip_serializing_if = "Option::is_none")]
