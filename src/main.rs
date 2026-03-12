@@ -79,11 +79,12 @@ fn main() -> Result<()> {
             None => ()
         };
     }
-    code_owners.entries.sort_by_key(|x| x.path.clone());
     if grouped {
         code_owners.entries.sort_by_key(|x| x.group.clone());
     };
 
+    // Ensure filepaths are correctly ordered
+    code_owners.entries.sort();
 
     // And now, to write the file.
     let mut fd = OpenOptions::new()

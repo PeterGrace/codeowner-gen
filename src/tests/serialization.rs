@@ -448,18 +448,24 @@ teams:
     - \"path-to-a-file\"
     - \"path/\"
     - \"another-path-to-a-file\"
-    - \"path/to-a-folder/\"
+    - \"path/to-a-nested-dir/\"
+  \"team\":
+    - \"*\"
+    - \"path/*.js\"
+    - \"path/to-a-file-in-a-dir\"
 ";
     let code_owners = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let mut entries = crate::teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
-    entries.sort_by_key(|x| x.path.clone());
-
+    entries.sort();
     let paths: Vec<&str> = entries.iter().map(|e| e.path.to_str().unwrap()).collect();
 
     assert_eq!(paths, vec![
+        "*",
         "another-path-to-a-file",
         "path/",
-        "path/to-a-folder/",
+        "path/*.js",
+        "path/to-a-file-in-a-dir",
+        "path/to-a-nested-dir/",
         "path-to-a-file",
     ]);
 }
