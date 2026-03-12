@@ -1,9 +1,9 @@
 name: Release
 
 on:
-  release:
-    types:
-      - created
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   build:
@@ -61,8 +61,5 @@ jobs:
         if: runner.os == 'macOS'
         run: codesign --sign - --force ${{ matrix.asset_name }}
 
-      - name: Upload artifacts
-        uses: AButler/upload-release-assets@v2.0
-        with:
-          files: ${{ matrix.asset_name }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v2
