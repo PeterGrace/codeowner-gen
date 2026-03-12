@@ -2,12 +2,10 @@ name: Test Action
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - trunk
-  pull_request:
-    branches:
-      - trunk
+  workflow_run:
+    workflows: ['Release']
+    types: 
+      - completed
 
 jobs:
   test-action:
