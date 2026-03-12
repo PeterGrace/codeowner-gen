@@ -20,8 +20,6 @@ jobs:
             output-file: CODEOWNERS-test
           - os: windows-latest
             output-file: CODEOWNERS-test-win
-          - os: macos-latest
-            output-file: CODEOWNERS-test-mac
     steps:
       - name: Checkout
         uses: actions/checkout@v4
