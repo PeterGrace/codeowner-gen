@@ -449,13 +449,14 @@ teams:
     - \"path/\"
     - \"another-path-to-a-file\"
     - \"path/to-a-nested-dir/\"
+  \"team\":
     - \"*\"
     - \"path/*.js\"
     - \"path/to-a-file-in-a-dir\"
 ";
     let code_owners = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
-    let entries = crate::teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
-
+    let mut entries = crate::teams::merge_teams_into_entries(code_owners.entries, code_owners.teams);
+    entries.sort();
     let paths: Vec<&str> = entries.iter().map(|e| e.path.to_str().unwrap()).collect();
 
     assert_eq!(paths, vec![
