@@ -102,7 +102,7 @@ impl<'de> Deserialize<'de> for TeamPath {
     }
 }
 
-#[derive(Deserialize, Default, Debug, PartialEq)]
+#[derive(Deserialize, Default, Debug, PartialEq, Eq)]
 pub(crate) struct CodeOwner {
     pub(crate) path: PathBuf,
     #[serde(deserialize_with = "owners_from_string")]
@@ -111,6 +111,69 @@ pub(crate) struct CodeOwner {
     pub(crate) comment: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) group: Option<String>,
+}
+
+impl PartialOrd for CodeOwner {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// File-path sorting
+// We need to use custom sorting to ensure * always comes before other entries.
+// Paths like /path/*.js will also correctly be ordered first, but due to ASCII ordering.
+impl Ord for CodeOwner {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let a_str = self.path.to_str().unwrap_or("");
+        let b_str = other.path.to_str().unwrap_or("");
+        match (a_str.starts_with('*'), b_str.starts_with('*')) {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => self.path.cmp(&other.path),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(path: &str) -> CodeOwner {
+        CodeOwner {
+            path: PathBuf::from(path),
+            owners: vec![],
+            comment: None,
+            group: None,
+        }
+    }
+
+    #[test]
+    fn test_wildcard_sorts_before_regular_paths() {
+        let mut entries = [entry("src/"), entry("*"), entry("lib/")];
+        entries.sort();
+        assert_eq!(entries[0].path, PathBuf::from("*"));
+    }
+
+    #[test]
+    fn test_wildcard_prefix_sorts_before_regular_paths() {
+        let mut entries = [entry("src/"), entry("*.rs"), entry("lib/")];
+        entries.sort();
+        assert_eq!(entries[0].path, PathBuf::from("*.rs"));
+    }
+
+    #[test]
+    fn test_wildcard_prefix_sorts_before_regular_paths_in_dir() {
+        let mut entries = [entry("src/*.rs"), entry("src/README.md")];
+        entries.sort();
+        assert_eq!(entries[0].path, PathBuf::from("src/*.rs"));
+    }
+
+    #[test]
+    fn test_directory_sorts_before_hyphenated_path_at_same_prefix() {
+        let mut entries = [entry("path-to-a-file"), entry("path/")];
+        entries.sort();
+        assert_eq!(entries[0].path, PathBuf::from("path/"));
+    }
 }
 
 fn owners_from_string<'de, D>(input: D) -> Result<Vec<Owner>, D::Error>

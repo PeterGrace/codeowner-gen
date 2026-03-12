@@ -56,13 +56,17 @@ pub(crate) fn merge_teams_into_entries(
         }
     }
 
-    path_map
+    let mut entries: Vec<CodeOwner> = path_map
         .into_values()
         .map(|mut entry| {
             entry.owners.sort();
             entry
         })
-        .collect()
+        .collect();
+
+    entries.sort();
+
+    entries
 }
 
 #[cfg(test)]

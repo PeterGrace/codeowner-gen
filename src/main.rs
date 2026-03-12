@@ -79,7 +79,6 @@ fn main() -> Result<()> {
             None => ()
         };
     }
-    code_owners.entries.sort_by_key(|x| x.path.clone());
     if grouped {
         code_owners.entries.sort_by_key(|x| x.group.clone());
     };
