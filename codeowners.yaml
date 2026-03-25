@@ -19,3 +19,7 @@ entries:
     - "pete.grace@gmail.com"
     - "@petergrace"
     - "@petergrace/teamname"
+  - path: "docs/"
+    negate: true        # renders as: !docs/generated/
+    owners: []
+
