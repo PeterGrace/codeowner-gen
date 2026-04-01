@@ -49,7 +49,6 @@ pub(crate) fn merge_teams_into_entries(
                 })
                 .or_insert_with(|| CodeOwner {
                     path: team_path.path,
-                    negate: false,
                     owners: vec![owner.clone()],
                     comment: None,
                     group: team_path.group,
@@ -128,7 +127,6 @@ mod tests {
     fn test_merge_preserves_entry_metadata() {
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: Some(String::from("Core source")),
             group: Some(String::from("main")),
@@ -153,7 +151,6 @@ mod tests {
     fn test_merge_deduplicates_owners() {
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::Username(String::from("@alice"))],
             comment: None,
             group: None,
@@ -193,7 +190,6 @@ mod tests {
     fn test_entry_group_takes_precedence_over_team_group() {
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: None,
             group: Some(String::from("main")),
@@ -217,7 +213,6 @@ mod tests {
     fn test_team_group_applied_when_entry_has_none() {
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::Username(String::from("@admin"))],
             comment: None,
             group: None,

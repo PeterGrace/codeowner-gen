@@ -21,7 +21,6 @@ pub(crate) fn expand_owner_groups(
 
         expanded_entries.push(CodeOwner {
             path: entry.path,
-            negate: entry.negate,
             owners: expanded_owners,
             comment: entry.comment,
             group: entry.group,
@@ -109,7 +108,6 @@ mod tests {
 
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::OwnerGroupRef("my_group".to_string())],
             comment: None,
             group: None,
@@ -168,7 +166,6 @@ mod tests {
 
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![Owner::OwnerGroupRef("nonexistent".to_string())],
             comment: None,
             group: None,
@@ -219,7 +216,6 @@ mod tests {
 
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![
                 Owner::Username("@bob".to_string()),
                 Owner::OwnerGroupRef("my_group".to_string()),
@@ -257,7 +253,6 @@ mod tests {
 
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![
                 Owner::Username("@alice".to_string()),
                 Owner::OwnerGroupRef("my_group".to_string()),
@@ -279,7 +274,6 @@ mod tests {
 
         let entries = vec![CodeOwner {
             path: PathBuf::from("src/"),
-            negate: false,
             owners: vec![
                 Owner::Username("@alice".to_string()),
                 Owner::Team("@org/team".to_string()),

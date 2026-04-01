@@ -105,8 +105,6 @@ impl<'de> Deserialize<'de> for TeamPath {
 #[derive(Deserialize, Default, Debug, PartialEq, Eq)]
 pub(crate) struct CodeOwner {
     pub(crate) path: PathBuf,
-    #[serde(default)]
-    pub(crate) negate: bool,
     #[serde(deserialize_with = "owners_from_string")]
     pub(crate) owners: Vec<Owner>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -131,8 +129,7 @@ impl Ord for CodeOwner {
         match (a_str.starts_with('*'), b_str.starts_with('*')) {
             (true, false) => std::cmp::Ordering::Less,
             (false, true) => std::cmp::Ordering::Greater,
-            _ => self.path.cmp(&other.path)
-                .then(self.negate.cmp(&other.negate)),
+            _ => self.path.cmp(&other.path),
         }
     }
 }
@@ -144,17 +141,6 @@ mod tests {
     fn entry(path: &str) -> CodeOwner {
         CodeOwner {
             path: PathBuf::from(path),
-            negate: false,
-            owners: vec![],
-            comment: None,
-            group: None,
-        }
-    }
-
-    fn negated_entry(path: &str) -> CodeOwner {
-        CodeOwner {
-            path: PathBuf::from(path),
-            negate: true,
             owners: vec![],
             comment: None,
             group: None,
@@ -187,22 +173,6 @@ mod tests {
         let mut entries = [entry("path-to-a-file"), entry("path/")];
         entries.sort();
         assert_eq!(entries[0].path, PathBuf::from("path/"));
-    }
-
-    #[test]
-    fn test_negated_entry_sorts_after_same_path() {
-        let mut entries = [negated_entry("docs/"), entry("docs/")];
-        entries.sort();
-        assert!(!entries[0].negate);
-        assert!(entries[1].negate);
-    }
-
-    #[test]
-    fn test_negated_subpath_sorts_after_parent() {
-        let mut entries = [negated_entry("docs/generated/"), entry("docs/")];
-        entries.sort();
-        assert_eq!(entries[0].path, PathBuf::from("docs/"));
-        assert_eq!(entries[1].path, PathBuf::from("docs/generated/"));
     }
 }
 

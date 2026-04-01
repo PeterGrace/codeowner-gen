@@ -71,11 +71,8 @@ fn main() -> Result<()> {
     let mut grouped = false;
     // for mvp, find longest path first...
     for code_owner in &code_owners.entries {
-        // for path len, if there's a negating bang then we should account for that in our len
-        // calc.
-        let path_len = code_owner.path.as_os_str().len() + if code_owner.negate { 1 } else { 0 };
-        if path_len > longest_path {
-            longest_path = path_len;
+        if code_owner.path.as_os_str().len() > longest_path {
+            longest_path = code_owner.path.as_os_str().len()
         }
         match code_owner.group {
             Some(_) => { if !grouped { grouped = true; } }
@@ -122,12 +119,7 @@ fn main() -> Result<()> {
         if co.comment.is_some() {
             fd.write_all(format!("# {}\n", co.comment.unwrap()).as_bytes())?;
         };
-        let display_path = if co.negate {
-            format!("!{}", co.path.display())
-        } else {
-            co.path.display().to_string()
-        };
-        fd.write_all(format!("{:width$} {}\n", display_path, owners, width = longest_path).as_bytes())?;
+        fd.write_all(format!("{:width$} {}\n", co.path.display(), owners, width = longest_path).as_bytes())?;
     }
     Ok(())
 }

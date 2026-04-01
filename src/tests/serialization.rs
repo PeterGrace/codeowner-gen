@@ -27,7 +27,6 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("*"),
                 owners: vec![Owner::Username(String::from("@petergrace"))]
             }
@@ -54,7 +53,6 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("*"),
                 owners: vec![Owner::Team(String::from("@my/team"))]
             }
@@ -81,7 +79,6 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("*"),
                 owners: vec![Owner::Email(String::from("pete.grace@gmail.com"))]
             }
@@ -113,7 +110,6 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("foo/"),
                 owners: vec![
                     Owner::Email(String::from("pete.grace@gmail.com")),
@@ -123,7 +119,6 @@ entries:
             CodeOwner{
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("bar/"),
                 owners: vec![
                     Owner::Username(String::from("@petergrace")),
@@ -157,7 +152,6 @@ entries:
             CodeOwner{
                 comment: Some(String::from("All the things")),
                 group: Some(String::from("primary")),
-                negate: false,
                 path: PathBuf::from("*"),
                 owners: vec![Owner::Username(String::from("@petergrace"))]
             }
@@ -276,7 +270,6 @@ teams:
             CodeOwner {
                 comment: Some(String::from("Needs metadata")),
                 group: None,
-                negate: false,
                 path: PathBuf::from("special/*"),
                 owners: vec![Owner::Username(String::from("@admin"))]
             }
@@ -379,7 +372,6 @@ entries:
             CodeOwner {
                 comment: None,
                 group: None,
-                negate: false,
                 path: PathBuf::from("src/"),
                 owners: vec![Owner::OwnerGroupRef(String::from("my_group"))]
             }
@@ -476,64 +468,4 @@ teams:
         "path/to-a-nested-dir/",
         "path-to-a-file",
     ]);
-}
-
-#[test]
-fn test_negated_entry_parsed()
-{
-    const INPUT_DATA: &str = "
----
-entries:
-  - path: \"docs/generated/\"
-    negate: true
-    owners: []
-";
-    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
-    assert!(value.entries[0].negate);
-    assert_eq!(value.entries[0].path, PathBuf::from("docs/generated/"));
-    assert!(value.entries[0].owners.is_empty());
-}
-
-#[test]
-fn test_negate_defaults_to_false()
-{
-    const INPUT_DATA: &str = "
----
-entries:
-  - path: \"src/\"
-    owners:
-      - \"@petergrace\"
-";
-    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
-    assert!(!value.entries[0].negate);
-}
-
-#[test]
-fn test_negated_entry_with_owners()
-{
-    const INPUT_DATA: &str = "
----
-entries:
-  - path: \"docs/\"
-    negate: true
-    owners:
-      - \"@petergrace\"
-";
-    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
-
-    let control: CodeOwners = CodeOwners {
-        owner_groups: vec![],
-        entries: vec![
-            CodeOwner {
-                comment: None,
-                group: None,
-                negate: true,
-                path: PathBuf::from("docs/"),
-                owners: vec![Owner::Username(String::from("@petergrace"))]
-            }
-        ],
-        teams: HashMap::new(),
-    };
-
-    assert_eq!(value, control);
 }
