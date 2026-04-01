@@ -152,30 +152,6 @@ In this example:
 
 **Note:** Owner groups cannot reference other owner groups (no nesting). The owners within an owner group must be valid GitHub usernames (`@user`), teams (`@org/team`), or email addresses.
 
-### Negated Entries
-
-Setting `negate: true` on an entry causes the path to be rendered with a leading `!` in the CODEOWNERS file. This is the standard GitHub CODEOWNERS syntax for removing a path from a previously-matched ownership rule.
-
-```yaml
----
-entries:
-  - path: "docs/"
-    owners:
-      - "@petergrace"
-  - path: "docs/generated/"
-    negate: true
-    owners: []
-```
-
-This produces output like:
-
-```
-docs/           @petergrace
-!docs/generated/
-```
-
-GitHub interprets the `!` prefix as "no owner for this path", overriding the `docs/` rule for the `docs/generated/` subtree. `negate` defaults to `false` and is only needed when you want to explicitly exclude a path from ownership.
-
 ### Mixed Format
 
 You can combine both formats. When the same path appears in both `teams` and `entries`, owners are merged and the entry's metadata (comment/group) is preserved:
