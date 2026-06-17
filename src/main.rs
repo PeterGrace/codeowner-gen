@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate tracing;
 mod owner_groups;
+mod pipeline;
 mod render;
 mod structs;
 mod teams;
