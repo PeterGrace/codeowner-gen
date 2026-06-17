@@ -1,0 +1,15 @@
+---
+# Multiple ungrouped entries with multiple owners.
+# Demonstrates:
+#   - Author order is PRESERVED (zebra/ stays before alpha/ - NOT alphabetized).
+#   - Owners within an entry ARE sorted by type then name
+#     (usernames first, then teams, then emails).
+entries:
+  - path: "zebra/"
+    owners:
+      - "@bob"
+      - "@alice"
+  - path: "alpha/"
+    owners:
+      - "carol@example.com"
+      - "@dave"

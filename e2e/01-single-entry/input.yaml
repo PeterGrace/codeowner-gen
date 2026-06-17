@@ -1,0 +1,7 @@
+---
+# Simplest possible case: one ungrouped entry, one owner.
+# Demonstrates: the implicit UNGROUPED block with matching BEGIN/END footers.
+entries:
+  - path: "*"
+    owners:
+      - "@alice"

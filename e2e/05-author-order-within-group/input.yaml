@@ -1,0 +1,21 @@
+---
+# Several entries in the SAME group, declared in a deliberately
+# non-path-sorted order (app/web/, then app/, then app/api/).
+# Demonstrates:
+#   - Within a block, entries keep AUTHOR order. They are NOT path-sorted.
+#     This is the heart of the "author owns order" model: because CODEOWNERS
+#     is last-match-wins, you control precedence by the order you write.
+#   - When every entry is grouped, there is no UNGROUPED block at all.
+entries:
+  - path: "app/web/"
+    group: "core"
+    owners:
+      - "@web"
+  - path: "app/"
+    group: "core"
+    owners:
+      - "@app"
+  - path: "app/api/"
+    group: "core"
+    owners:
+      - "@api"

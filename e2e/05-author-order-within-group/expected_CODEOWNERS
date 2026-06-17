@@ -1,0 +1,5 @@
+####### BEGIN GROUP CORE
+app/web/  @web
+app/      @app
+app/api/  @api
+### END GROUP CORE

@@ -1,0 +1,21 @@
+---
+# The `teams:` shorthand (owner -> list of paths) merged with `entries:`.
+# Demonstrates:
+#   - A team path that matches an existing entry path MERGES owners onto that
+#     entry (src/ gets both @maintainers and @security).
+#   - Team-derived entries (no authored position, since `teams:` is an
+#     unordered map) are appended AFTER authored entries within their block,
+#     sorted alphabetically by path (src/ authored, then deploy/ team-derived).
+#   - A team path can carry its own group label; without one it is ungrouped.
+entries:
+  - path: "src/"
+    group: "core"
+    owners:
+      - "@maintainers"
+teams:
+  "@ops":
+    - path: "deploy/"
+      group: "core"
+    - "scripts/"
+  "@security":
+    - "src/"

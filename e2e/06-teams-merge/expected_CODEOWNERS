@@ -1,0 +1,7 @@
+####### BEGIN UNGROUPED
+scripts/  @ops
+### END UNGROUPED
+####### BEGIN GROUP CORE
+src/      @maintainers @security
+deploy/   @ops
+### END GROUP CORE
