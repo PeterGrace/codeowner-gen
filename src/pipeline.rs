@@ -7,9 +7,12 @@ use std::path::PathBuf;
 ///
 /// Steps: capture each entry's authored position (its index in the original
 /// `entries:` list) BEFORE merging destroys order, expand `owner_groups`
-/// aliases, merge the `teams:` shorthand, then sort under the author-owned
-/// ordering model.
+/// aliases, merge the `teams:` shorthand, then sort. The `alphabetize` switch
+/// (default true) decides whether within-block order is by path or by author
+/// position; the captured author order is only consulted when it is false.
 pub(crate) fn process(code_owners: CodeOwners) -> Result<Vec<CodeOwner>, String> {
+    let alphabetize = code_owners.alphabetize;
+
     let mut author_order: HashMap<PathBuf, usize> = HashMap::new();
     for (i, entry) in code_owners.entries.iter().enumerate() {
         author_order.entry(entry.path.clone()).or_insert(i);
@@ -22,6 +25,6 @@ pub(crate) fn process(code_owners: CodeOwners) -> Result<Vec<CodeOwner>, String>
     )?;
 
     let mut entries = teams::merge_teams_into_entries(expanded_entries, expanded_teams);
-    sort_entries(&mut entries, &author_order);
+    sort_entries(&mut entries, &author_order, alphabetize);
     Ok(entries)
 }

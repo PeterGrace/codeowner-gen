@@ -1,0 +1,19 @@
+---
+# A/B pair with 10-alphabetize-off: identical input, opposite switch.
+# alphabetize: true is the DEFAULT (shown explicitly here for contrast).
+# Entries in the "core" group are declared out of path order; with
+# alphabetize on, they are sorted by path: src/apple/, src/mango/, src/zebra/.
+alphabetize: true
+entries:
+  - path: "src/zebra/"
+    group: "core"
+    owners:
+      - "@z"
+  - path: "src/apple/"
+    group: "core"
+    owners:
+      - "@a"
+  - path: "src/mango/"
+    group: "core"
+    owners:
+      - "@m"

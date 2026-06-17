@@ -21,6 +21,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: None,
@@ -45,6 +46,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: None,
@@ -69,6 +71,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: None,
@@ -98,6 +101,7 @@ entries:
 ";
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![
             CodeOwner {
@@ -140,6 +144,7 @@ entries:
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: Some(String::from("All the things")),
@@ -172,6 +177,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
@@ -198,6 +204,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
@@ -223,6 +230,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
@@ -253,6 +261,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: Some(String::from("Needs metadata")),
@@ -302,6 +311,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![],
         teams: expected_teams,
@@ -317,6 +327,7 @@ fn test_empty_config() {
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![],
         teams: HashMap::new(),
@@ -342,6 +353,7 @@ entries:
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![OwnerGroup {
             name: String::from("my_group"),
             owners: vec![
@@ -386,6 +398,7 @@ teams:
     );
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![OwnerGroup {
             name: String::from("bolt_team"),
             owners: vec![
@@ -490,6 +503,7 @@ entries:
     let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
 
     let control: CodeOwners = CodeOwners {
+        alphabetize: true,
         owner_groups: vec![],
         entries: vec![CodeOwner {
             comment: None,
@@ -502,4 +516,31 @@ entries:
     };
 
     assert_eq!(value, control);
+}
+
+#[test]
+fn test_alphabetize_defaults_to_true() {
+    const INPUT_DATA: &str = "
+---
+entries:
+  - path: \"*\"
+    owners:
+      - \"@petergrace\"
+";
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+    assert!(value.alphabetize);
+}
+
+#[test]
+fn test_alphabetize_can_be_disabled() {
+    const INPUT_DATA: &str = "
+---
+alphabetize: false
+entries:
+  - path: \"*\"
+    owners:
+      - \"@petergrace\"
+";
+    let value = serde_yaml::from_str::<CodeOwners>(INPUT_DATA).unwrap();
+    assert!(!value.alphabetize);
 }

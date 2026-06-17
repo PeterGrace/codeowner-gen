@@ -23,7 +23,7 @@ codeowner-gen takes a well-formatted yaml file, and does a few things:
 
 - You specify a bunch of paths and one or more owners per path, and it will ensure that all records are spaced so that output is columnar,
 - You specify one or more `owner_groups` which is a group of people or teams, and they can then be assigned to paths,
-- entries are emitted in the order you wrote them (see [Ordering and grouping](#ordering-and-grouping) below),
+- entries are alphabetized within each group by default, or emitted in the order you wrote them when you set `alphabetize: false` (see [Ordering and grouping](#ordering-and-grouping) below),
 - entries can optionally be assigned to named groups, which controls the block order in the output,
 - it processes the Owners you've listed and I might eventually enable the app to validate that the user/team you've specified actually exists,
 - You can specify a comment, per path entry, and it will render it out for you.
@@ -198,22 +198,40 @@ This results in `src/` having owners `@myorg/team @admin` with the comment "Core
 
 ### Ordering and grouping
 
-`codeowner-gen` follows an **author-owns-order** model. Because GitHub
-CODEOWNERS resolves ownership by *last matching pattern wins*, the order of
-lines is meaningful — so the tool never silently reorders your precedence list.
+GitHub CODEOWNERS resolves ownership by *last matching pattern wins*, so the
+order of lines is meaningful. `codeowner-gen` gives you control over it:
 
 - **Every entry belongs to a group.** If you omit `group:`, the entry is placed
   in the implicit, reserved `ungrouped` group.
 - **Block order:** the `ungrouped` block is emitted first (it forms a
   low-precedence baseline), followed by every other group block sorted
-  **alphabetically by group name**.
-- **Within a block:** entries keep the order you wrote them in. Entries that
-  exist only because of the `teams:` mapping (which is an unordered map) have no
-  authored position, so they are appended after the authored entries and sorted
-  alphabetically by path.
+  **alphabetically by group name**. This is always the case.
+- **Within a block — the `alphabetize` switch (top-level, default `true`):**
+  - `alphabetize: true` (default): entries inside each block are sorted by
+    path. Output is canonical regardless of how you wrote the input — handy for
+    stable diffs and findability.
+  - `alphabetize: false`: entries render in the order you wrote them
+    (author-owns-order). Use this when you rely on declaration order for
+    precedence. Entries that exist only because of the `teams:` mapping (an
+    unordered map) have no authored position, so they are appended after the
+    authored entries and sorted alphabetically by path.
+
+```yaml
+alphabetize: false   # default is true
+entries:
+  - path: "*"
+    owners: ["@default"]
+  # ...
+```
+
+> **Note:** if your patterns overlap (a path can match more than one), the
+> within-block order changes which owner wins. Prefer `alphabetize: false` and
+> deliberate ordering in that case; `alphabetize: true` is safest when your
+> patterns don't overlap.
 
 To make an entry win over everything else, place it last within the
-last-rendered block — there is no separate priority field.
+last-rendered block (with `alphabetize: false`) — there is no separate priority
+field.
 
 ### Example Output
 

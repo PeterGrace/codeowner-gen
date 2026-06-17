@@ -1,7 +1,8 @@
 # End-to-end fixtures
 
 A tree of hand-checked input/output pairs that double as living documentation
-of the **author-owns-order** model and as a manual regression harness.
+of the ordering model (the `alphabetize` switch, grouping, teams, and aliases)
+and as a manual regression harness.
 
 Each subdirectory is one scenario:
 
@@ -26,25 +27,30 @@ pre-merge smoke check.
 | # | Scenario | What it demonstrates |
 |---|----------|----------------------|
 | 01 | single entry | the implicit `UNGROUPED` block with matching `BEGIN`/`END` footers |
-| 02 | multiple ungrouped | author order is **preserved** (entries are *not* alphabetized); owners within an entry *are* sorted by type then name |
+| 02 | multiple ungrouped | with the **default** `alphabetize: true`, entries within a block are path-sorted (alpha/ before zebra/); owners within an entry are sorted by type then name |
 | 03 | negate | the `!` prefix, column width accounting for it, and an owner-less line |
 | 04 | groups | `UNGROUPED` first, then group blocks **alphabetically by name**; column width is global across all blocks |
-| 05 | author order within a group | within a block, entries keep author order and are never path-sorted; no `UNGROUPED` block when everything is grouped |
-| 06 | teams merge | `teams:` paths merge owners onto matching entries; team-derived entries (no authored position) are appended alphabetically after authored ones |
+| 05 | author order within a group | `alphabetize: false` keeps entries in declaration order (not path-sorted); no `UNGROUPED` block when everything is grouped |
+| 06 | teams merge | `teams:` paths merge owners onto matching entries; with default alphabetization the whole block is path-sorted |
 | 07 | owner_groups alias | a bare owner-group name expands to its bundle of owners (distinct from the `group:` block label); duplicates dropped |
-| 08 | comprehensive | all of the above together: aliases, comments, negate, grouped + ungrouped, and team-derived fallback |
+| 08 | comprehensive | all of the above together: aliases, comments, negate, grouped + ungrouped, default alphabetization |
+| 09 | alphabetize on | `alphabetize: true` (default) sorts within-block by path — A half of an A/B pair |
+| 10 | alphabetize off | `alphabetize: false` on identical input preserves declaration order — B half of the pair |
 
 ## Rules these fixtures pin down
 
-1. **Author owns order.** The tool never reorders the precedence list by path.
-   Order within a block is exactly the order you wrote (CODEOWNERS is
-   last-match-wins, so order is meaning).
+1. **The `alphabetize` switch (top-level, default `true`)** controls within-block
+   order. `true` sorts entries by path; `false` preserves declaration (author)
+   order. CODEOWNERS is last-match-wins, so this choice is semantic, not
+   cosmetic — `false` is the escape hatch when you rely on order for precedence.
 2. **Blocks:** `ungrouped` (implicit when `group:` is omitted) renders first;
    every other group renders in a block sorted alphabetically by group name,
-   wrapped in `####### BEGIN <LABEL>` / `### END <LABEL>`.
+   wrapped in `####### BEGIN <LABEL>` / `### END <LABEL>`. Block order is
+   unaffected by `alphabetize`.
 3. **Team-derived entries** (paths that exist only via the unordered `teams:`
-   map) have no authored position, so they sort after authored entries within
-   their block, alphabetically by path.
+   map) have no authored position. Under `alphabetize: false` they sort after
+   authored entries within their block, alphabetically by path; under
+   `alphabetize: true` the whole block is path-sorted anyway.
 4. **Owners** within a line are sorted by type (usernames, then teams, then
    emails) and de-duplicated.
 5. **Column width** is computed globally across all entries (and includes the
