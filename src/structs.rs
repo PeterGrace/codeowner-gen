@@ -12,6 +12,9 @@ lazy_static! {
     static ref EMAIL: Regex = Regex::new(r"^\S+@\S+").unwrap();
 }
 
+/// The reserved group name used for entries with no explicit group.
+pub(crate) const UNGROUPED: &str = "ungrouped";
+
 /// Defines a group of owners that can be referenced by name
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub(crate) struct OwnerGroup {
@@ -131,7 +134,9 @@ impl Ord for CodeOwner {
         match (a_str.starts_with('*'), b_str.starts_with('*')) {
             (true, false) => std::cmp::Ordering::Less,
             (false, true) => std::cmp::Ordering::Greater,
-            _ => self.path.cmp(&other.path)
+            _ => self
+                .path
+                .cmp(&other.path)
                 .then(self.negate.cmp(&other.negate)),
         }
     }
@@ -141,7 +146,7 @@ impl CodeOwner {
     /// The effective group name: the explicit group, or the reserved
     /// `"ungrouped"` name when none was specified.
     pub(crate) fn group_name(&self) -> &str {
-        self.group.as_deref().unwrap_or("ungrouped")
+        self.group.as_deref().unwrap_or(UNGROUPED)
     }
 }
 
@@ -151,13 +156,10 @@ impl CodeOwner {
 /// `author_order` maps a path to its index in the original `entries:` list;
 /// paths absent from the map (team-derived) sort after authored entries and
 /// fall back to the path `Ord` tiebreaker.
-pub(crate) fn sort_entries(
-    entries: &mut [CodeOwner],
-    author_order: &std::collections::HashMap<std::path::PathBuf, usize>,
-) {
+pub(crate) fn sort_entries(entries: &mut [CodeOwner], author_order: &HashMap<PathBuf, usize>) {
     entries.sort_by(|a, b| {
-        let a_ungrouped = a.group_name() == "ungrouped";
-        let b_ungrouped = b.group_name() == "ungrouped";
+        let a_ungrouped = a.group_name() == UNGROUPED;
+        let b_ungrouped = b.group_name() == UNGROUPED;
         // false (ungrouped) sorts before true (grouped): invert so ungrouped is first
         (!a_ungrouped)
             .cmp(&(!b_ungrouped))
@@ -238,8 +240,6 @@ mod tests {
         assert_eq!(entries[0].path, PathBuf::from("docs/"));
         assert_eq!(entries[1].path, PathBuf::from("docs/generated/"));
     }
-
-    use std::collections::HashMap;
 
     fn grouped_entry(path: &str, group: &str) -> CodeOwner {
         CodeOwner {
@@ -329,7 +329,10 @@ where
     owners_from_string_internal(input, false)
 }
 
-fn owners_from_string_internal<'de, D>(input: D, allow_group_refs: bool) -> Result<Vec<Owner>, D::Error>
+fn owners_from_string_internal<'de, D>(
+    input: D,
+    allow_group_refs: bool,
+) -> Result<Vec<Owner>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -358,7 +361,9 @@ where
 
 /// Check if a string is a valid owner group name (alphanumeric, underscores, hyphens)
 fn is_valid_group_name(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
@@ -394,7 +399,9 @@ impl FromStr for Owner {
 impl std::fmt::Display for Owner {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) | Owner::OwnerGroupRef(v) => v.fmt(f),
+            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) | Owner::OwnerGroupRef(v) => {
+                v.fmt(f)
+            }
         }
     }
 }
@@ -410,7 +417,9 @@ impl<'de> Deserialize<'de> for Owner {
             type Value = Owner;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string like @username, @org/team, email@domain.com, or owner_group name")
+                formatter.write_str(
+                    "a string like @username, @org/team, email@domain.com, or owner_group name",
+                )
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Owner, E>
