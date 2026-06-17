@@ -1,0 +1,13 @@
+---
+# A negated entry (renders with a leading "!").
+# Demonstrates:
+#   - The "!" prefix.
+#   - The column width accounts for the extra "!" character.
+#   - An entry with no owners renders just the (negated) path.
+entries:
+  - path: "docs/"
+    owners:
+      - "@writers"
+  - path: "docs/secret/"
+    negate: true
+    owners: []

@@ -107,15 +107,9 @@ mod tests {
     fn test_merge_teams_combines_owners_for_same_path() {
         let mut teams = HashMap::new();
 
-        teams.insert(
-            Owner::Username(String::from("@alice")),
-            vec![path("src/")],
-        );
+        teams.insert(Owner::Username(String::from("@alice")), vec![path("src/")]);
 
-        teams.insert(
-            Owner::Team(String::from("@org/team")),
-            vec![path("src/")],
-        );
+        teams.insert(Owner::Team(String::from("@org/team")), vec![path("src/")]);
 
         let result = merge_teams_into_entries(vec![], teams);
 
@@ -136,10 +130,7 @@ mod tests {
 
         let mut teams = HashMap::new();
 
-        teams.insert(
-            Owner::Team(String::from("@org/team")),
-            vec![path("src/")],
-        );
+        teams.insert(Owner::Team(String::from("@org/team")), vec![path("src/")]);
 
         let result = merge_teams_into_entries(entries, teams);
 
@@ -161,10 +152,7 @@ mod tests {
 
         let mut teams = HashMap::new();
 
-        teams.insert(
-            Owner::Username(String::from("@alice")),
-            vec![path("src/")],
-        );
+        teams.insert(Owner::Username(String::from("@alice")), vec![path("src/")]);
 
         let result = merge_teams_into_entries(entries, teams);
 
@@ -287,11 +275,17 @@ teams:
 
         assert_eq!(merged.len(), 2);
 
-        let src_entry = merged.iter().find(|e| e.path.as_os_str() == "src/").unwrap();
+        let src_entry = merged
+            .iter()
+            .find(|e| e.path.as_os_str() == "src/")
+            .unwrap();
 
         assert_eq!(src_entry.group, Some(String::from("core")));
 
-        let lib_entry = merged.iter().find(|e| e.path.as_os_str() == "lib/").unwrap();
+        let lib_entry = merged
+            .iter()
+            .find(|e| e.path.as_os_str() == "lib/")
+            .unwrap();
 
         assert_eq!(lib_entry.group, None);
     }

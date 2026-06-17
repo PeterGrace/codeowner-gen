@@ -1,0 +1,9 @@
+####### BEGIN UNGROUPED
+*     @default
+### END UNGROUPED
+####### BEGIN GROUP BACKEND
+src/  @be-team
+### END GROUP BACKEND
+####### BEGIN GROUP FRONTEND
+ui/   @fe-team
+### END GROUP FRONTEND

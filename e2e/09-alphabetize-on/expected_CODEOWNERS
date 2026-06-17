@@ -1,0 +1,5 @@
+####### BEGIN GROUP CORE
+src/apple/  @a
+src/mango/  @m
+src/zebra/  @z
+### END GROUP CORE

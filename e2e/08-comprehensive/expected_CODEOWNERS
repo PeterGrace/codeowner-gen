@@ -1,0 +1,14 @@
+####### BEGIN UNGROUPED
+# Catch-all baseline owner
+*                           @root
+README.md                   @docs-team
+### END UNGROUPED
+####### BEGIN GROUP AUTH
+services/auth/              @auth-eng
+### END GROUP AUTH
+####### BEGIN GROUP PAYMENTS
+# Owned by the payments crew
+services/payments/          @pay-eng @org/payments
+services/payments/docs/     @docs-team
+!services/payments/legacy/ 
+### END GROUP PAYMENTS

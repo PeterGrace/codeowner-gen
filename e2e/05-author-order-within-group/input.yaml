@@ -1,0 +1,24 @@
+---
+# alphabetize: false opts OUT of the default within-block alphabetization,
+# so entries render in declaration (author) order.
+# Several entries in the SAME group, declared in a deliberately
+# non-path-sorted order (app/web/, then app/, then app/api/).
+# Demonstrates:
+#   - With alphabetize: false, within a block entries keep AUTHOR order and are
+#     NOT path-sorted. This is the "author owns order" escape hatch: because
+#     CODEOWNERS is last-match-wins, you control precedence by declaration order.
+#   - When every entry is grouped, there is no UNGROUPED block at all.
+alphabetize: false
+entries:
+  - path: "app/web/"
+    group: "core"
+    owners:
+      - "@web"
+  - path: "app/"
+    group: "core"
+    owners:
+      - "@app"
+  - path: "app/api/"
+    group: "core"
+    owners:
+      - "@api"

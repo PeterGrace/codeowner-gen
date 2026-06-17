@@ -1,0 +1,17 @@
+---
+# Multiple ungrouped entries with multiple owners.
+# Demonstrates (with the DEFAULT alphabetize: true):
+#   - Entries within a block are sorted by path: alpha/ comes before zebra/,
+#     even though zebra/ was declared first. (Set alphabetize: false to keep
+#     declaration order - see fixture 05.)
+#   - Owners within an entry ARE sorted by type then name
+#     (usernames first, then teams, then emails).
+entries:
+  - path: "zebra/"
+    owners:
+      - "@bob"
+      - "@alice"
+  - path: "alpha/"
+    owners:
+      - "carol@example.com"
+      - "@dave"

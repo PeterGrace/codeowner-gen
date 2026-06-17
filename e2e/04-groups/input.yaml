@@ -1,0 +1,20 @@
+---
+# Entries with group labels, declared out of order.
+# Demonstrates:
+#   - The UNGROUPED block is emitted FIRST (the "*" entry), regardless of
+#     where it was declared.
+#   - Group blocks follow, sorted ALPHABETICALLY by group name
+#     (backend before frontend), NOT by declaration order.
+#   - Column width is GLOBAL across all entries/blocks.
+entries:
+  - path: "src/"
+    group: "backend"
+    owners:
+      - "@be-team"
+  - path: "*"
+    owners:
+      - "@default"
+  - path: "ui/"
+    group: "frontend"
+    owners:
+      - "@fe-team"

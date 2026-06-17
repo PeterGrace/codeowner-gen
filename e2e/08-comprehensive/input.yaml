@@ -1,0 +1,42 @@
+---
+# Capstone: everything at once.
+#   - owner_groups alias (payments_team)
+#   - entries with group labels, comments, and a negated path
+#   - an ungrouped catch-all
+#   - teams shorthand contributing both an ungrouped path and a grouped path
+# Demonstrates the full ordering model end to end (DEFAULT alphabetize: true):
+#   - UNGROUPED block first, then group blocks alphabetically: AUTH before
+#     PAYMENTS.
+#   - Within each block, entries are sorted by path (e.g. in PAYMENTS:
+#     services/payments/, then services/payments/docs/, then
+#     services/payments/legacy/).
+#   - Comments render above their entry; negate renders "!"; owners sorted by
+#     type (usernames, then teams).
+owner_groups:
+  - name: payments_team
+    owners:
+      - "@pay-eng"
+      - "@org/payments"
+entries:
+  - path: "*"
+    comment: "Catch-all baseline owner"
+    owners:
+      - "@root"
+  - path: "services/payments/"
+    group: "payments"
+    comment: "Owned by the payments crew"
+    owners:
+      - "payments_team"
+  - path: "services/payments/legacy/"
+    group: "payments"
+    negate: true
+    owners: []
+  - path: "services/auth/"
+    group: "auth"
+    owners:
+      - "@auth-eng"
+teams:
+  "@docs-team":
+    - "README.md"
+    - path: "services/payments/docs/"
+      group: "payments"

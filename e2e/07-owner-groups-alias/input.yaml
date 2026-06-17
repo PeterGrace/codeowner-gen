@@ -1,0 +1,22 @@
+---
+# `owner_groups:` define a reusable, named bundle of owners (an alias).
+# This is DISTINCT from the `group:` block label on an entry.
+# Demonstrates:
+#   - The bare name "platform" in an entry's owners expands to the bundle's
+#     owners (@infra, @org/sre).
+#   - Expansion happens before owners are merged/sorted, and duplicates are
+#     dropped.
+owner_groups:
+  - name: platform
+    owners:
+      - "@infra"
+      - "@org/sre"
+entries:
+  - path: "*"
+    owners:
+      - "platform"
+      - "@lead"
+  - path: "terraform/"
+    group: "infra"
+    owners:
+      - "platform"

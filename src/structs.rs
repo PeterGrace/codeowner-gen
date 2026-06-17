@@ -12,6 +12,9 @@ lazy_static! {
     static ref EMAIL: Regex = Regex::new(r"^\S+@\S+").unwrap();
 }
 
+/// The reserved group name used for entries with no explicit group.
+pub(crate) const UNGROUPED: &str = "ungrouped";
+
 /// Defines a group of owners that can be referenced by name
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub(crate) struct OwnerGroup {
@@ -21,8 +24,15 @@ pub(crate) struct OwnerGroup {
     pub(crate) owners: Vec<Owner>,
 }
 
-#[derive(Deserialize, Default, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq)]
 pub(crate) struct CodeOwners {
+    /// Master switch for within-block ordering. When true (the default),
+    /// entries inside each group block are sorted alphabetically by path. When
+    /// false, entries render in declaration (author) order, with team-derived
+    /// paths appended alphabetically.
+    #[serde(default = "default_alphabetize")]
+    pub(crate) alphabetize: bool,
+
     /// a list of owner group definitions that can be referenced by name
     #[serde(default)]
     pub(crate) owner_groups: Vec<OwnerGroup>,
@@ -34,6 +44,21 @@ pub(crate) struct CodeOwners {
     /// a mapping of owner to list of paths they own
     #[serde(default)]
     pub(crate) teams: HashMap<Owner, Vec<TeamPath>>,
+}
+
+fn default_alphabetize() -> bool {
+    true
+}
+
+impl Default for CodeOwners {
+    fn default() -> Self {
+        Self {
+            alphabetize: true,
+            owner_groups: Vec::new(),
+            entries: Vec::new(),
+            teams: HashMap::new(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -131,10 +156,54 @@ impl Ord for CodeOwner {
         match (a_str.starts_with('*'), b_str.starts_with('*')) {
             (true, false) => std::cmp::Ordering::Less,
             (false, true) => std::cmp::Ordering::Greater,
-            _ => self.path.cmp(&other.path)
+            _ => self
+                .path
+                .cmp(&other.path)
                 .then(self.negate.cmp(&other.negate)),
         }
     }
+}
+
+impl CodeOwner {
+    /// The effective group name: the explicit group, or the reserved
+    /// `"ungrouped"` name when none was specified.
+    pub(crate) fn group_name(&self) -> &str {
+        self.group.as_deref().unwrap_or(UNGROUPED)
+    }
+}
+
+/// Sorts entries into render order.
+///
+/// Block order is always: ungrouped first, then other groups alphabetically by
+/// name. Within a block the order depends on `alphabetize`:
+///   - `true`: entries are ordered by path (the `CodeOwner` `Ord`).
+///   - `false`: entries keep their authored position (`author_order`, the index
+///     in the original `entries:` list). Team-derived paths absent from the map
+///     fall back to path order after the authored entries.
+pub(crate) fn sort_entries(
+    entries: &mut [CodeOwner],
+    author_order: &HashMap<PathBuf, usize>,
+    alphabetize: bool,
+) {
+    entries.sort_by(|a, b| {
+        let a_ungrouped = a.group_name() == UNGROUPED;
+        let b_ungrouped = b.group_name() == UNGROUPED;
+        // false (ungrouped) sorts before true (grouped): invert so ungrouped is first
+        (!a_ungrouped)
+            .cmp(&(!b_ungrouped))
+            .then_with(|| a.group_name().cmp(b.group_name()))
+            .then_with(|| {
+                if alphabetize {
+                    // defer entirely to the path `Ord` tiebreaker below
+                    std::cmp::Ordering::Equal
+                } else {
+                    let ai = author_order.get(&a.path).copied().unwrap_or(usize::MAX);
+                    let bi = author_order.get(&b.path).copied().unwrap_or(usize::MAX);
+                    ai.cmp(&bi)
+                }
+            })
+            .then_with(|| a.cmp(b))
+    });
 }
 
 #[cfg(test)]
@@ -204,6 +273,118 @@ mod tests {
         assert_eq!(entries[0].path, PathBuf::from("docs/"));
         assert_eq!(entries[1].path, PathBuf::from("docs/generated/"));
     }
+
+    fn grouped_entry(path: &str, group: &str) -> CodeOwner {
+        CodeOwner {
+            path: PathBuf::from(path),
+            negate: false,
+            owners: vec![],
+            comment: None,
+            group: Some(group.to_string()),
+        }
+    }
+
+    fn author_order(paths: &[&str]) -> HashMap<PathBuf, usize> {
+        paths
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (PathBuf::from(*p), i))
+            .collect()
+    }
+
+    fn paths_of(entries: &[CodeOwner]) -> Vec<&str> {
+        entries.iter().map(|e| e.path.to_str().unwrap()).collect()
+    }
+
+    #[test]
+    fn test_ungrouped_block_sorts_first() {
+        let order = author_order(&["src/", "*", "docs/"]);
+        let mut entries = vec![
+            grouped_entry("src/", "core"),
+            entry("*"),
+            grouped_entry("docs/", "docs"),
+        ];
+        sort_entries(&mut entries, &order, false);
+        // ungrouped (*) first, then groups alphabetically: core, docs
+        assert_eq!(paths_of(&entries), vec!["*", "src/", "docs/"]);
+    }
+
+    #[test]
+    fn test_groups_sort_alphabetically_by_name() {
+        let order = author_order(&["z.txt", "a.txt"]);
+        let mut entries = vec![
+            grouped_entry("z.txt", "zeta"),
+            grouped_entry("a.txt", "alpha"),
+        ];
+        sort_entries(&mut entries, &order, false);
+        // alpha block before zeta block, regardless of author order
+        assert_eq!(paths_of(&entries), vec!["a.txt", "z.txt"]);
+    }
+
+    #[test]
+    fn test_within_group_preserves_author_order() {
+        // author wrote src/b before src/a; author owns order, NOT alphabetical
+        let order = author_order(&["src/b", "src/a"]);
+        let mut entries = vec![
+            grouped_entry("src/a", "core"),
+            grouped_entry("src/b", "core"),
+        ];
+        sort_entries(&mut entries, &order, false);
+        assert_eq!(paths_of(&entries), vec!["src/b", "src/a"]);
+    }
+
+    #[test]
+    fn test_team_derived_entries_fall_back_to_path_order() {
+        // only src/main has an authored position; the others come from teams
+        let order = author_order(&["src/main"]);
+        let mut entries = vec![
+            grouped_entry("src/z", "core"),
+            grouped_entry("src/main", "core"),
+            grouped_entry("src/a", "core"),
+        ];
+        sort_entries(&mut entries, &order, false);
+        // authored first, then team-derived alphabetical-by-path
+        assert_eq!(paths_of(&entries), vec!["src/main", "src/a", "src/z"]);
+    }
+
+    #[test]
+    fn test_alphabetize_true_orders_within_group_by_path() {
+        // authored out of path order, but alphabetize=true sorts by path
+        let order = author_order(&["src/c", "src/a", "src/b"]);
+        let mut entries = vec![
+            grouped_entry("src/c", "core"),
+            grouped_entry("src/a", "core"),
+            grouped_entry("src/b", "core"),
+        ];
+        sort_entries(&mut entries, &order, true);
+        assert_eq!(paths_of(&entries), vec!["src/a", "src/b", "src/c"]);
+    }
+
+    #[test]
+    fn test_alphabetize_true_ignores_author_order() {
+        // same input as test_within_group_preserves_author_order, but with
+        // alphabetize=true the authored order is overridden by path order
+        let order = author_order(&["src/b", "src/a"]);
+        let mut entries = vec![
+            grouped_entry("src/a", "core"),
+            grouped_entry("src/b", "core"),
+        ];
+        sort_entries(&mut entries, &order, true);
+        assert_eq!(paths_of(&entries), vec!["src/a", "src/b"]);
+    }
+
+    #[test]
+    fn test_alphabetize_does_not_affect_block_order() {
+        // ungrouped still first, groups still alphabetical by name, regardless
+        let order = author_order(&["*", "z.txt", "a.txt"]);
+        let mut entries = vec![
+            grouped_entry("z.txt", "zeta"),
+            entry("*"),
+            grouped_entry("a.txt", "alpha"),
+        ];
+        sort_entries(&mut entries, &order, true);
+        assert_eq!(paths_of(&entries), vec!["*", "a.txt", "z.txt"]);
+    }
 }
 
 fn owners_from_string<'de, D>(input: D) -> Result<Vec<Owner>, D::Error>
@@ -220,7 +401,10 @@ where
     owners_from_string_internal(input, false)
 }
 
-fn owners_from_string_internal<'de, D>(input: D, allow_group_refs: bool) -> Result<Vec<Owner>, D::Error>
+fn owners_from_string_internal<'de, D>(
+    input: D,
+    allow_group_refs: bool,
+) -> Result<Vec<Owner>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -249,7 +433,9 @@ where
 
 /// Check if a string is a valid owner group name (alphanumeric, underscores, hyphens)
 fn is_valid_group_name(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    !s.is_empty()
+        && s.chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
@@ -285,7 +471,9 @@ impl FromStr for Owner {
 impl std::fmt::Display for Owner {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) | Owner::OwnerGroupRef(v) => v.fmt(f),
+            Owner::Email(v) | Owner::Team(v) | Owner::Username(v) | Owner::OwnerGroupRef(v) => {
+                v.fmt(f)
+            }
         }
     }
 }
@@ -301,7 +489,9 @@ impl<'de> Deserialize<'de> for Owner {
             type Value = Owner;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string like @username, @org/team, email@domain.com, or owner_group name")
+                formatter.write_str(
+                    "a string like @username, @org/team, email@domain.com, or owner_group name",
+                )
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Owner, E>

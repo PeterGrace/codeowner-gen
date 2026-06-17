@@ -1,0 +1,18 @@
+---
+# A/B pair with 09-alphabetize-on: identical input, opposite switch.
+# alphabetize: false renders entries in declaration (author) order:
+# src/zebra/, src/apple/, src/mango/ - exactly as written.
+alphabetize: false
+entries:
+  - path: "src/zebra/"
+    group: "core"
+    owners:
+      - "@z"
+  - path: "src/apple/"
+    group: "core"
+    owners:
+      - "@a"
+  - path: "src/mango/"
+    group: "core"
+    owners:
+      - "@m"

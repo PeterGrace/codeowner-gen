@@ -1,6 +1,6 @@
 // build.rs
-use std::process::Command;
 use auditable_build;
+use std::process::Command;
 fn main() {
     // note: add error checking yourself.
     let output = Command::new("git")

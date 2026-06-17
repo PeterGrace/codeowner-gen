@@ -1,0 +1,22 @@
+---
+# The `teams:` shorthand (owner -> list of paths) merged with `entries:`.
+# Demonstrates:
+#   - A team path that matches an existing entry path MERGES owners onto that
+#     entry (src/ gets both @maintainers and @security).
+#   - With the DEFAULT alphabetize: true, the whole "core" block is sorted by
+#     path (deploy/ before src/), so the authored-vs-team-derived distinction
+#     does not affect order here. (It only matters with alphabetize: false,
+#     where team-derived paths are appended after authored ones - see 05.)
+#   - A team path can carry its own group label; without one it is ungrouped.
+entries:
+  - path: "src/"
+    group: "core"
+    owners:
+      - "@maintainers"
+teams:
+  "@ops":
+    - path: "deploy/"
+      group: "core"
+    - "scripts/"
+  "@security":
+    - "src/"
