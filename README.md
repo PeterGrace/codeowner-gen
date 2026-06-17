@@ -23,12 +23,12 @@ codeowner-gen takes a well-formatted yaml file, and does a few things:
 
 - You specify a bunch of paths and one or more owners per path, and it will ensure that all records are spaced so that output is columnar,
 - You specify one or more `owner_groups` which is a group of people or teams, and they can then be assigned to paths,
-- the output will be alphabetized,
-- unless you specify one or more of the objects as "grouped", in which case it will alphabetize and then group the records together,
+- entries are emitted in the order you wrote them (see [Ordering and grouping](#ordering-and-grouping) below),
+- entries can optionally be assigned to named groups, which controls the block order in the output,
 - it processes the Owners you've listed and I might eventually enable the app to validate that the user/team you've specified actually exists,
 - You can specify a comment, per path entry, and it will render it out for you.
 
-The output is then rendered to the CODEOWNERS file for you, alphabetized and/or grouped by your grouping specification, and properly columned so that the text columns align.
+The output is then rendered to the CODEOWNERS file for you, grouped and ordered by your specification, and properly columned so that the text columns align.
 
 With this workflow, a reviewer can see that the first line of the CODEOWNERS file is a codeowner-gen rendered file and ignore it, in favor of reviewing the changes in the codeowners.yaml file instead. That file, being yaml, will show changes in a more sane and easy-to-digest format for a PR reviewer.
 
@@ -195,6 +195,25 @@ entries:
 This results in `src/` having owners `@myorg/team @admin` with the comment "Core source code".
 
 **Note:** If the same path has a `group` defined in both `entries` and `teams`, the entry's group takes precedence. The team's group is only applied if the entry doesn't already have a group.
+
+### Ordering and grouping
+
+`codeowner-gen` follows an **author-owns-order** model. Because GitHub
+CODEOWNERS resolves ownership by *last matching pattern wins*, the order of
+lines is meaningful — so the tool never silently reorders your precedence list.
+
+- **Every entry belongs to a group.** If you omit `group:`, the entry is placed
+  in the implicit, reserved `ungrouped` group.
+- **Block order:** the `ungrouped` block is emitted first (it forms a
+  low-precedence baseline), followed by every other group block sorted
+  **alphabetically by group name**.
+- **Within a block:** entries keep the order you wrote them in. Entries that
+  exist only because of the `teams:` mapping (which is an unordered map) have no
+  authored position, so they are appended after the authored entries and sorted
+  alphabetically by path.
+
+To make an entry win over everything else, place it last within the
+last-rendered block — there is no separate priority field.
 
 ### Example Output
 
