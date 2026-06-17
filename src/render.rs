@@ -71,11 +71,19 @@ mod tests {
     use crate::structs::{CodeOwner, Owner};
     use std::path::PathBuf;
 
-    fn co(path: &str, group: Option<&str>, negate: bool, comment: Option<&str>, owner: Option<&str>) -> CodeOwner {
+    fn co(
+        path: &str,
+        group: Option<&str>,
+        negate: bool,
+        comment: Option<&str>,
+        owner: Option<&str>,
+    ) -> CodeOwner {
         CodeOwner {
             path: PathBuf::from(path),
             negate,
-            owners: owner.map(|o| vec![Owner::Team(o.to_string())]).unwrap_or_default(),
+            owners: owner
+                .map(|o| vec![Owner::Team(o.to_string())])
+                .unwrap_or_default(),
             comment: comment.map(|c| c.to_string()),
             group: group.map(|g| g.to_string()),
         }
@@ -93,7 +101,13 @@ mod tests {
         // already in final sorted order: ungrouped, then core, then docs
         let entries = vec![
             co("*", None, false, None, Some("@org/default")),
-            co("src/", Some("core"), false, Some("core code"), Some("@org/core")),
+            co(
+                "src/",
+                Some("core"),
+                false,
+                Some("core code"),
+                Some("@org/core"),
+            ),
             co("lib/", Some("core"), false, None, Some("@org/core")),
             co("build/", Some("docs"), true, None, None),
         ];
@@ -115,13 +129,41 @@ mod tests {
         // negate prefix renders
         assert!(body.lines().any(|l| l.starts_with("!build/")));
         // owners render on the catch-all line
-        assert!(body.lines().any(|l| l.starts_with("*") && l.contains("@org/default")));
+        assert!(
+            body.lines()
+                .any(|l| l.starts_with("*") && l.contains("@org/default"))
+        );
     }
 
     #[test]
     fn test_explicit_ungrouped_group_uses_ungrouped_block() {
         let entries = vec![co("x", Some("ungrouped"), false, None, Some("@org/x"))];
         let body = render_body(&entries);
-        assert_eq!(structure(&body), vec!["####### BEGIN UNGROUPED", "### END UNGROUPED"]);
+        assert_eq!(
+            structure(&body),
+            vec!["####### BEGIN UNGROUPED", "### END UNGROUPED"]
+        );
+    }
+
+    #[test]
+    fn test_multiple_owners_render_space_separated() {
+        let entries = vec![CodeOwner {
+            path: PathBuf::from("*"),
+            negate: false,
+            owners: vec![
+                Owner::Team("@org/a".to_string()),
+                Owner::Username("@bob".to_string()),
+            ],
+            comment: None,
+            group: None,
+        }];
+        let body = render_body(&entries);
+        // both owners present on the entry line, space-separated in order
+        assert!(
+            body.lines()
+                .any(|l| l.starts_with("*") && l.contains("@org/a @bob")),
+            "expected '@org/a @bob' on the entry line, got:\n{}",
+            body
+        );
     }
 }
