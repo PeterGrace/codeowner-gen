@@ -49,48 +49,15 @@ fn main() -> Result<()> {
     let mut file = File::open(filename)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
-    let mut code_owners = match serde_yaml::from_str::<CodeOwners>(contents.as_str()) {
+    let code_owners = match serde_yaml::from_str::<CodeOwners>(contents.as_str()) {
         Ok(v) => v,
         Err(e) => bail!("Unable to parse config file: {:#?}", e),
     };
 
-    // expand owner group references before merging
-    let (expanded_entries, expanded_teams) = match owner_groups::expand_owner_groups(
-        &code_owners.owner_groups,
-        code_owners.entries,
-        code_owners.teams,
-    ) {
+    let entries = match pipeline::process(code_owners) {
         Ok(v) => v,
         Err(err) => bail!("Invalid owner group reference: {}", err),
     };
-
-    code_owners.entries = teams::merge_teams_into_entries(expanded_entries, expanded_teams);
-
-    let mut longest_path = 0;
-    let mut grouped = false;
-    // for mvp, find longest path first...
-    for code_owner in &code_owners.entries {
-        // for path len, if there's a negating bang then we should account for that in our len
-        // calc.
-        let path_len = code_owner.path.as_os_str().len() + if code_owner.negate { 1 } else { 0 };
-        if path_len > longest_path {
-            longest_path = path_len;
-        }
-        match code_owner.group {
-            Some(_) => {
-                if !grouped {
-                    grouped = true;
-                }
-            }
-            None => (),
-        };
-    }
-    if grouped {
-        code_owners.entries.sort_by_key(|x| x.group.clone());
-    };
-
-    // Ensure filepaths are correctly ordered
-    code_owners.entries.sort();
 
     // And now, to write the file.
     let mut fd = OpenOptions::new()
@@ -106,51 +73,6 @@ fn main() -> Result<()> {
         )
         .as_bytes(),
     )?;
-    fd.write_all("####### BEGIN UNGROUPED\n".as_bytes())?;
-    let mut last_group = String::new();
-    for co in code_owners.entries {
-        let mut owners = String::new();
-        for o in co.owners {
-            owners = format!("{} {}", owners, o);
-        }
-        if grouped {
-            if co.group.clone().is_some() {
-                if last_group.is_empty() {
-                    last_group = co.group.clone().unwrap();
-                    fd.write_all(
-                        format!(
-                            "####### BEGIN GROUP {}\n",
-                            co.group.clone().unwrap().to_ascii_uppercase()
-                        )
-                        .as_bytes(),
-                    )?;
-                }
-                if co.group.clone().unwrap() != last_group {
-                    fd.write_all(
-                        format!("### END GROUP {}\n", last_group.to_ascii_uppercase()).as_bytes(),
-                    )?;
-                    fd.write_all(
-                        format!(
-                            "####### BEGIN GROUP {}\n",
-                            co.group.clone().unwrap().to_ascii_uppercase()
-                        )
-                        .as_bytes(),
-                    )?;
-                    last_group = co.group.clone().unwrap();
-                }
-            }
-        }
-        if co.comment.is_some() {
-            fd.write_all(format!("# {}\n", co.comment.unwrap()).as_bytes())?;
-        };
-        let display_path = if co.negate {
-            format!("!{}", co.path.display())
-        } else {
-            co.path.display().to_string()
-        };
-        fd.write_all(
-            format!("{:width$} {}\n", display_path, owners, width = longest_path).as_bytes(),
-        )?;
-    }
+    fd.write_all(render::render_body(&entries).as_bytes())?;
     Ok(())
 }

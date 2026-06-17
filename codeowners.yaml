@@ -1,25 +1,26 @@
 ---
 entries:
-  - path: "alpha"
-    comment: "Alphabetically speaking, this probably is coming early on"
-    group: "phonetic"
-    owners:
-    - "@petergrace"
-  - path: "zebra"
-    comment: "This is likely the last entry"
-    group: "phonetic"
-    owners:
-    - "@petergrace"
   - path: "*"
-    group: "main"
+    comment: "Default owner for everything not otherwise claimed"
     owners:
-    - "@petergrace"
-  - path: "target/debug/deps/itoa-*"
+      - "@petergrace"
+  - path: "src/"
+    group: "core"
     owners:
-    - "pete.grace@gmail.com"
-    - "@petergrace"
-    - "@petergrace/teamname"
+      - "@petergrace"
   - path: "docs/"
-    negate: true        # renders as: !docs/generated/
+    group: "docs"
+    owners:
+      - "pete.grace@gmail.com"
+  - path: "src/internal/"
+    group: "core"
+    owners:
+      - "@petergrace/teamname"
+  - path: "docs/generated/"
+    group: "docs"
+    negate: true
     owners: []
-
+teams:
+  "@petergrace":
+    - path: "src/legacy/"
+      group: "core"
