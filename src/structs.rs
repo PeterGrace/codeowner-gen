@@ -137,6 +137,40 @@ impl Ord for CodeOwner {
     }
 }
 
+impl CodeOwner {
+    /// The effective group name: the explicit group, or the reserved
+    /// `"ungrouped"` name when none was specified.
+    pub(crate) fn group_name(&self) -> &str {
+        self.group.as_deref().unwrap_or("ungrouped")
+    }
+}
+
+/// Sorts entries into render order under the "author owns order" model.
+///
+/// Key: (ungrouped-first, group name alphabetical, authored index, path Ord).
+/// `author_order` maps a path to its index in the original `entries:` list;
+/// paths absent from the map (team-derived) sort after authored entries and
+/// fall back to the path `Ord` tiebreaker.
+pub(crate) fn sort_entries(
+    entries: &mut [CodeOwner],
+    author_order: &std::collections::HashMap<std::path::PathBuf, usize>,
+) {
+    entries.sort_by(|a, b| {
+        let a_ungrouped = a.group_name() == "ungrouped";
+        let b_ungrouped = b.group_name() == "ungrouped";
+        // false (ungrouped) sorts before true (grouped): invert so ungrouped is first
+        (!a_ungrouped)
+            .cmp(&(!b_ungrouped))
+            .then_with(|| a.group_name().cmp(b.group_name()))
+            .then_with(|| {
+                let ai = author_order.get(&a.path).copied().unwrap_or(usize::MAX);
+                let bi = author_order.get(&b.path).copied().unwrap_or(usize::MAX);
+                ai.cmp(&bi)
+            })
+            .then_with(|| a.cmp(b))
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -203,6 +237,81 @@ mod tests {
         entries.sort();
         assert_eq!(entries[0].path, PathBuf::from("docs/"));
         assert_eq!(entries[1].path, PathBuf::from("docs/generated/"));
+    }
+
+    use std::collections::HashMap;
+
+    fn grouped_entry(path: &str, group: &str) -> CodeOwner {
+        CodeOwner {
+            path: PathBuf::from(path),
+            negate: false,
+            owners: vec![],
+            comment: None,
+            group: Some(group.to_string()),
+        }
+    }
+
+    fn author_order(paths: &[&str]) -> HashMap<PathBuf, usize> {
+        paths
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (PathBuf::from(*p), i))
+            .collect()
+    }
+
+    fn paths_of(entries: &[CodeOwner]) -> Vec<&str> {
+        entries.iter().map(|e| e.path.to_str().unwrap()).collect()
+    }
+
+    #[test]
+    fn test_ungrouped_block_sorts_first() {
+        let order = author_order(&["src/", "*", "docs/"]);
+        let mut entries = vec![
+            grouped_entry("src/", "core"),
+            entry("*"),
+            grouped_entry("docs/", "docs"),
+        ];
+        sort_entries(&mut entries, &order);
+        // ungrouped (*) first, then groups alphabetically: core, docs
+        assert_eq!(paths_of(&entries), vec!["*", "src/", "docs/"]);
+    }
+
+    #[test]
+    fn test_groups_sort_alphabetically_by_name() {
+        let order = author_order(&["z.txt", "a.txt"]);
+        let mut entries = vec![
+            grouped_entry("z.txt", "zeta"),
+            grouped_entry("a.txt", "alpha"),
+        ];
+        sort_entries(&mut entries, &order);
+        // alpha block before zeta block, regardless of author order
+        assert_eq!(paths_of(&entries), vec!["a.txt", "z.txt"]);
+    }
+
+    #[test]
+    fn test_within_group_preserves_author_order() {
+        // author wrote src/b before src/a; author owns order, NOT alphabetical
+        let order = author_order(&["src/b", "src/a"]);
+        let mut entries = vec![
+            grouped_entry("src/a", "core"),
+            grouped_entry("src/b", "core"),
+        ];
+        sort_entries(&mut entries, &order);
+        assert_eq!(paths_of(&entries), vec!["src/b", "src/a"]);
+    }
+
+    #[test]
+    fn test_team_derived_entries_fall_back_to_path_order() {
+        // only src/main has an authored position; the others come from teams
+        let order = author_order(&["src/main"]);
+        let mut entries = vec![
+            grouped_entry("src/z", "core"),
+            grouped_entry("src/main", "core"),
+            grouped_entry("src/a", "core"),
+        ];
+        sort_entries(&mut entries, &order);
+        // authored first, then team-derived alphabetical-by-path
+        assert_eq!(paths_of(&entries), vec!["src/main", "src/a", "src/z"]);
     }
 }
 
