@@ -56,7 +56,7 @@ fn main() -> Result<()> {
 
     let entries = match pipeline::process(code_owners) {
         Ok(v) => v,
-        Err(err) => bail!("Invalid owner group reference: {}", err),
+        Err(err) => bail!("Failed to process code owners: {}", err),
     };
 
     // And now, to write the file.
